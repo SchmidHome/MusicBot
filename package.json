@@ -25,6 +25,7 @@
   "homepage": "https://github.com/SchmidHome/MusicBot",
   "dependencies": {
     "dotenv": "^16.0.1",
+    "node": "^18.5.0",
     "node-telegram-bot-api": "^0.58.0",
     "typescript": "^4.4.4"
   },
