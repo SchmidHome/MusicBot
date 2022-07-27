@@ -6,6 +6,7 @@ dotenv.config()
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true })
 
+//! DEBUG
 // Matches "/echo [whatever]"
 bot.onText(/\/echo (.+)/, (msg, match) => {
     if (!match) throw new Error("match is undefined")
