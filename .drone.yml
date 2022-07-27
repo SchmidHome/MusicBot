@@ -9,7 +9,6 @@ volumes:
     path: /var/run/docker.sock
 
 steps:
-#                             INIT
 - name: build
   image: docker
   volumes:
@@ -18,7 +17,6 @@ steps:
   commands:
   - docker build . -t musicbot:build-${DRONE_BUILD_NUMBER}
 
-#                             FINISH
 - name: push
   image: docker
   volumes:
@@ -31,7 +29,6 @@ steps:
     event:
     - push
 
-#                             CLEANUP
 - name: cleanup
   image: docker
   volumes:
@@ -45,43 +42,3 @@ steps:
     status:
     - failure
     - success
-  depends_on:
-  - build
-  - push
-  - update main container
-  - update dev container
-
-#                             NOTIFICATION
-# https://github.com/appleboy/drone-discord/blob/master/DOCS.md
-- name: discord deploy
-  image: appleboy/drone-discord
-  settings:
-    webhook_id:
-      from_secret: DISCORD_WEBHOOK_ID
-    webhook_token:
-      from_secret: DISCORD_WEBHOOK_TOKEN
-    message: >
-      {{#success build.status}}
-        build {{build.number}} deployed on {{commit.branch}}.
-      {{else}}
-        build {{build.number}} could not be deployed to {{commit.branch}}.
-      {{/success}}
-  when:
-    branch: 
-    - master
-    - develop
-    event:
-    - push
-    status:
-    - failure
-    - success
-  depends_on:
-  - update main container
-  - update dev container
-  - discord test
-
----
-kind: signature
-hmac: cb5d1bd130ce503b42326bb52495131f5825f0588d00b0c2c7fac9326cacc146
-
-...
