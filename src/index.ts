@@ -4,6 +4,7 @@ import { TELEGRAM_TOKEN } from "./config"
 
 dotenv.config()
 
+console.log("connecting to " + TELEGRAM_TOKEN)
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true })
 
 //! DEBUG
@@ -29,3 +30,7 @@ bot.on('message', (msg) => {
     // send a message to the chat acknowledging receipt of their message
     bot.sendMessage(chatId, 'Received your message');
 });
+
+bot.on("error", (err) => {
+    console.log("Error: ", err)
+})
