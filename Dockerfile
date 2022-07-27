@@ -5,6 +5,7 @@ RUN apk add --update nodejs yarn
 WORKDIR /usr/app
 
 ADD package.json .
+ADD yarn.lock .
 
 RUN yarn install --production
 
