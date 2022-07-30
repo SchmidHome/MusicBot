@@ -49,7 +49,7 @@ export async function addTrackFromDefaultPlaylist() {
         if (playlist == null) { return }
         const track = playlist.items[await getNewTrackNumber(playlist)].track
         if (track == null) { return }
-        addToQueue(track.uri)
+        await addToQueue(track.uri)
     } catch (error) {
         console.error(error);
     }

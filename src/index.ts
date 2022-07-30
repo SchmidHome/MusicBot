@@ -168,9 +168,9 @@ function roundNearest5(num: number) {
 setInterval(async () => {
     const queue = await getSongQueue()
     if (queue.length == 0) {
-        addTrackFromDefaultPlaylist()
+        await addTrackFromDefaultPlaylist()
     }
-}, 10 * 1000)
+}, 20 * 1000)
 
 // ############################################## REGISTER COMMANDS
 

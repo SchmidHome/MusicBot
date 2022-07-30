@@ -32,7 +32,7 @@ export async function getSongQueue(): Promise<string[]> {
     return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
 }
 
-export async function getUriQueueAll(): Promise<string[]> { 
+export async function getUriQueueAll(): Promise<string[]> {
     let _queue = (await device.GetQueue()).Result
     if (typeof _queue === "string") return []
     const uris = _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
@@ -55,5 +55,6 @@ export async function getVolume(): Promise<number> {
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
-    return await device.SetVolume(volume)
+    log("setting volume to ", volume)
+    return device.GroupRenderingControlService.SetGroupVolume({ InstanceID: 0, DesiredVolume: volume })
 }
