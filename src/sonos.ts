@@ -4,10 +4,6 @@ import { Song } from "./types"
 const device = new SonosDevice("192.168.1.207")
 
 
-// export async function getQueue(): Promise<Song[]> {
-//     return [{ name: "test", artist: "art", album: "alb", image: "art" }] //todo
-// }
-
 function sonosToSpotifyUri(uri: string): string {
     const res = /x-sonos-spotify:spotify:track:(\w{22})?.*/.exec(uri)
     if (res === null) throw new Error("Invalid Sonos URI")
@@ -21,6 +17,10 @@ export async function getCurrentTrack(): Promise<string | undefined> {
     return sonosToSpotifyUri(state.positionInfo.TrackURI)
 }
 
+// export async function getQueue(): Promise<Song[]> {
+//     return [{ name: "test", artist: "art", album: "alb", image: "art" }] //todo
+// }
+
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
         console.log("adding to queue ", uri)
@@ -33,9 +33,9 @@ export async function addToQueue(uri: string): Promise<boolean> {
 }
 
 export async function getVolume(): Promise<number> {
-    return 0 //todo
+    return (await device.GetState()).volume
 }
 
-export async function setVolume(volume: number): Promise<void> {
-    return //todo
+export async function setVolume(volume: number): Promise<boolean> {
+    return await device.SetVolume(volume)
 }

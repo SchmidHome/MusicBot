@@ -7,6 +7,14 @@ const spotify = new SpotifyWebApi({
     clientSecret: SPOTIFY_CLIENT_SECRET,
 })
 
+async function setup() {
+    let token = (await spotify.clientCredentialsGrant()).body;
+    spotify.setAccessToken(token.access_token);
+    console.log("Token refreshed");
+    setTimeout(setup, (token.expires_in - 30) * 1000);
+}
+setup()
+
 export async function querySong(song: string): Promise<Song | undefined> {
     const tracks = (await spotify.searchTracks(song)).body.tracks?.items || []
     
@@ -22,11 +30,5 @@ export async function querySong(song: string): Promise<Song | undefined> {
     }
 }
 
-// ############################################## 
-async function spotify_token() {
-    let token = (await spotify.clientCredentialsGrant()).body;
-    spotify.setAccessToken(token.access_token);
-    console.log("Token refreshed");
-    setTimeout(spotify_token, (token.expires_in - 30) * 1000);
-}
-spotify_token();
+// ##############################################
+

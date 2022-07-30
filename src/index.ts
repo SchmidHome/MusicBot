@@ -1,106 +1,52 @@
-import dotenv from "dotenv"
-import TelegramBot from 'node-telegram-bot-api'
-import { TELEGRAM_TOKEN } from "./config"
+import { Message, BotCommandScopeAllPrivateChats } from "node-telegram-bot-api"
+import { assertIsMatch, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 import { addToQueue, getCurrentTrack } from "./sonos"
 import { querySong } from "./spotify"
+import { bot } from "./telegram"
+import { UserState } from "./types"
+import { getUser, setUser, userToString } from "./userDatabase"
 
 console.clear()
 
-dotenv.config()
-
-console.log("connecting to telegram")
-const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true })
-
-// ############################################## PASSWORDS
-const passwords: { [name: string]: string | undefined } = {
-    "Johannes": "theWorld",
-    "Dylan": "theMoon",
-}
-
-// ############################################## USER STATES
-enum UserState {
-    unknown = 0,
-    user,
-    dj,
-    admin,
-}
-const userStates: { [id: number]: UserState } = {}
-
-function getUserState(chatID: number): UserState {
-    return userStates[chatID] || UserState.unknown
-}
-function setUserState(chatID: number, state: UserState): void {
-    userStates[chatID] = state
-}
-
 // ############################################## START
-
-// no arguments
 bot.onText(/^\/start *$/, async (msg) => {
-    const chatID = msg.chat.id
-    const userState = getUserState(chatID)
-    if (userState !== UserState.unknown) {
-        bot.sendMessage(chatID, "You are already registered")
+    const user = getUser(msg.chat.id)
+    if (isRegistered(user)) {
+        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")	
     } else {
-        await bot.sendMessage(chatID, "Welcome to the bot!")
-        await bot.sendMessage(chatID, "Please type /start <your_name>")
+        await bot.sendMessage(user.chatId, "Welcome to the bot!")
+        await bot.sendMessage(user.chatId, "Please type /start <your_name>")
     }
 })
 
-
-
-// ############################################## USER
 bot.onText(/^\/start (\S+) *$/, async (msg, match) => {
-    const chatID = msg.chat.id
-    const userState = getUserState(chatID)
-    if (userState !== UserState.unknown) {
-        await bot.sendMessage(chatID, "You are already registered!")
-    } else if (!match) {
-        throw new Error("no match on /start, " + chatID + ", " + userState)
+    const user = getUser(msg.chat.id)
+    assertIsMatch(match)
+
+    if (isRegistered(user)) {
+        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")	
     } else {
         const username = match[1]
-        if (passwords[username]) {
-            await bot.sendMessage(chatID, "Please type /start <your name> <your password>")
-        } else {
-            setUserState(chatID, UserState.user)
-            await bot.sendMessage(chatID, "Welcome " + username + "!")
-        }
+        setUser(user.chatId, username, UserState.user)
+        await bot.sendMessage(user.chatId, `Welcome ${username}!`)
+        console.log(`${userToString(getUser(user.chatId))} registered`)
     }
 })
 
-// ############################################## DJ
-bot.onText(/^\/dj (\S+) (\S+) *$/, async (msg, match) => {
-    const chatId = msg.chat.id
-    const userState = getUserState(chatId)
-    if (userState === UserState.dj || userState === UserState.admin) {
-        await bot.sendMessage(chatId, "You are already registered!")
-    } else if (!match) {
-        throw new Error("no match on /start, " + chatId + ", " + userState)
-    } else {
-        const username = match[1]
-        const password = match[2]
-        //check password
-        if (passwords[username] && passwords[username] == password) {
-            passwords[username] = undefined
-            setUserState(chatId, UserState.dj)
-            await bot.sendMessage(chatId, "Welcome " + username + "!")
-        } else {
-            await bot.sendMessage(chatId, "Wrong user or password!")
-        }
-    }
-})
+// ############################################## SEARCH TRACK
+export async function searchTrackMessage(msg: Message) {
+    const user = getUser(msg.chat.id)
+    assertIsRegistered(user)
 
-async function searchTrackMessage(msg: TelegramBot.Message) {
-    const chatId = msg.chat.id
     if (!msg.text) {
-        bot.sendMessage(chatId, "Please type a song name")
+        bot.sendMessage(user.chatId, "Please type a song name")
     } else {
         const song = await querySong(msg.text)
         if (!song) {
-            bot.sendMessage(chatId, "No song found")
+            bot.sendMessage(user.chatId, "No song found")
         } else {
             let msg = `*${song.name}*\n${song.artist}\n${song.imageUri}`
-            bot.sendMessage(chatId, msg, {
+            bot.sendMessage(user.chatId, msg, {
                 parse_mode: "Markdown", reply_markup: {
                     "inline_keyboard": [[
                         {
@@ -115,99 +61,74 @@ async function searchTrackMessage(msg: TelegramBot.Message) {
 }
 
 bot.on("callback_query", async (query) => {
-    const chatId = query.message!.chat.id
-    const data = query.data!
+    assertIsNotUndefined(query.message)
+    const user = getUser(query.message.chat.id)
+    assertIsRegistered(user)
+    assertIsNotUndefined(query.data)
 
-    bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: chatId, message_id: query.message!.message_id })
+    await bot.answerCallbackQuery(query.id)
 
-    bot.answerCallbackQuery(query.id)
-
-    if (data.startsWith("/queue ")) {
-        const uri = data.substring("/queue ".length)
+    if (query.data.startsWith("/queue ")) {
+        const uri = query.data.substring("/queue ".length)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
 
         if (await addToQueue(uri)) {
-            bot.sendMessage(chatId, "Song added to queue")
+            bot.sendMessage(user.chatId, "Song added to queue")
         } else {
-            bot.sendMessage(chatId, "Could not add song to queue")
+            bot.sendMessage(user.chatId, "Could not add song to queue")
         }
     }
 })
 
-// ############################################## ADMIN
-
-
-
-function onMessageAdmin(msg: TelegramBot.Message): void {
-
-}
-
 
 // ############################################## MESSAGE PARSER
 bot.on('message', (msg) => {
-    if (!msg.text) return
+    assertIsNotUndefined(msg.text)
     if (msg.text.startsWith('/')) return
-    const chatId = msg.chat.id
-    const userState = getUserState(chatId)
-    console.log("message: " + msg.text + ", " + chatId + ", " + userState)
-    switch (userState) {
-        case UserState.unknown:
-        // bot.sendMessage(chatId, "Please type /start <your_name>")
-        // break
+    const user = getUser(msg.chat.id)
+    assertIsRegistered(user)
+
+    console.log("message: " + msg.text + ", " + userToString(user))
+    switch (user.state) {
         case UserState.dj:
-            searchTrackMessage(msg)
-            break
         case UserState.admin:
-            onMessageAdmin(msg)
+            searchTrackMessage(msg)
             break
     }
 })
 
 // ##############################################
 bot.onText(/\/state/, (msg, match) => {
-    const chatId = msg.chat.id
-    const userState = getUserState(chatId)
-    switch (userState) {
+    const user = getUser(msg.chat.id)
+    assertIsMatch(match)
+
+    switch (user.state) {
         case UserState.unknown:
-            bot.sendMessage(chatId, "You are not registered!")
+            bot.sendMessage(user.chatId, "You are not registered!")
             break
         case UserState.user:
-            bot.sendMessage(chatId, "You are a user!")
+            bot.sendMessage(user.chatId, "You are a user!")
             break
         case UserState.dj:
-            bot.sendMessage(chatId, "You are a dj!")
+            bot.sendMessage(user.chatId, "You are a dj!")
             break
         case UserState.admin:
-            bot.sendMessage(chatId, "You are an admin!")
+            bot.sendMessage(user.chatId, "You are an admin!")
             break
     }
 })
 
 bot.onText(/\/playing/, async (msg, match) => {
-    const chatId = msg.chat.id
-    const userState = getUserState(chatId)
-    bot.sendMessage(chatId, "I am playing: " + await getCurrentTrack())
+    const user = getUser(msg.chat.id)
+    bot.sendMessage(user.chatId, "I am playing: " + await getCurrentTrack())
 })
 
-bot.onText(/\/echo (.+)/, (msg, match) => {
-    if (!match) throw new Error("match is undefined")
 
+// ############################################## REGISTER COMMANDS
 
-
-    // 'msg' is the received Message from Telegram
-    // 'match' is the result of executing the regexp above on the text content
-    // of the message
-
-    const chatId = msg.chat.id
-    const resp = match[1] // the captured "whatever"
-
-    // send back the matched "whatever" to the chat
-    bot.sendMessage(chatId, resp)
-})
-
-// Listen for any kind of message. There are different kinds of
-// messages.
-
-
-bot.on("error", (err) => {
-    console.log("Error: ", err)
+bot.setMyCommands([
+    { command: "start", description: "Start the bot" },
+    { command: "state", description: "Show your state" },
+], {
+    scope: { type: "all_private_chats" }
 })
