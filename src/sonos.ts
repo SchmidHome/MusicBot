@@ -1,8 +1,14 @@
 import { SonosDevice } from "@svrooij/sonos"
 import { isNotUndefined, isString } from "./helper"
+import { getCurrentSongFromUri } from "./spotify"
 import { Song } from "./types"
 
-const device = new SonosDevice("192.168.1.207")
+const device = new SonosDevice("192.168.1.90")
+
+const CT = "[ SONOS ] "
+function log(msg: string, ...args: any[]) {
+    console.log(CT + msg, ...args)
+}
 
 
 function sonosToSpotifyUri(uri: string): string {
@@ -18,23 +24,28 @@ export async function getCurrentTrack(): Promise<string | undefined> {
     return sonosToSpotifyUri(state.positionInfo.TrackURI)
 }
 
-export async function getQueue(): Promise<string[]> {
+export async function getSongQueue(): Promise<string[]> {
     let _queue = (await device.GetQueue()).Result
     if (typeof _queue === "string") return []
-
     const running = (await device.AVTransportService.GetPositionInfo()).Track
     _queue = _queue.slice(running)
+    return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
+}
 
-    return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri) //todo return type Song[]
+export async function getUriQueueAll(): Promise<string[]> { 
+    let _queue = (await device.GetQueue()).Result
+    if (typeof _queue === "string") return []
+    const uris = _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
+    return Promise.all(uris);
 }
 
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
-        console.log("adding to queue ", uri)
+        log("adding to queue ", uri)
         await device.AddUriToQueue(uri)
         return true
     } catch (error) {
-        console.log(error)
+        console.error(error)
         return false
     }
 }

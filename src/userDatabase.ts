@@ -3,6 +3,7 @@ import { User, UserState } from "./types"
 const userStates: { [id: number]: User | undefined } = {//load and save from file
     1340698323: { chatId: 1340698323, state: UserState.admin, name: "Johannes" },
     5502414084: { chatId: 5502414084, state: UserState.admin, name: "Dylan" },
+    5514678326: { chatId: 5514678326, state: UserState.dj, name: "Leonhard" },
 }
 
 export function getUser(chatID: number): User {

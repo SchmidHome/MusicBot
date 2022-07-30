@@ -29,3 +29,7 @@ export function isString(obj: anything): obj is string { return typeof obj === "
 export function assertIsMatch(match: RegExpExecArray | null): asserts match is RegExpExecArray {
     if (!match) throw new Error("match is undefined")
 }
+
+export function between(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
