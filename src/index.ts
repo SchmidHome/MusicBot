@@ -1,6 +1,6 @@
 import { Message, BotCommandScopeAllPrivateChats } from "node-telegram-bot-api"
 import { assertIsMatch, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
-import { addToQueue, getCurrentTrack } from "./sonos"
+import { addToQueue, getCurrentTrack, getQueue } from "./sonos"
 import { querySong } from "./spotify"
 import { bot } from "./telegram"
 import { UserState } from "./types"
@@ -12,7 +12,7 @@ console.clear()
 bot.onText(/^\/start *$/, async (msg) => {
     const user = getUser(msg.chat.id)
     if (isRegistered(user)) {
-        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")	
+        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
     } else {
         await bot.sendMessage(user.chatId, "Welcome to the bot!")
         await bot.sendMessage(user.chatId, "Please type /start <your_name>")
@@ -24,7 +24,7 @@ bot.onText(/^\/start (\S+) *$/, async (msg, match) => {
     assertIsMatch(match)
 
     if (isRegistered(user)) {
-        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")	
+        bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
     } else {
         const username = match[1]
         setUser(user.chatId, username, UserState.user)
@@ -123,12 +123,32 @@ bot.onText(/\/playing/, async (msg, match) => {
     bot.sendMessage(user.chatId, "I am playing: " + await getCurrentTrack())
 })
 
+bot.onText(/\/queue/, async (msg, match) => {
+    const user = getUser(msg.chat.id)
+    bot.sendMessage(user.chatId, "Queue:\n" + (await getQueue()).join("\n"))
+})
+
+
+// ############################################## QUEUE
+setInterval(async () => {
+    const queue = await getQueue()
+    if (queue.length == 0) {
+        console.log("queueEmpty")
+        //TODO add one from default playlist
+    }
+}, 10 * 1000)
+
+
 
 // ############################################## REGISTER COMMANDS
 
 bot.setMyCommands([
     { command: "start", description: "Start the bot" },
     { command: "state", description: "Show your state" },
+    { command: "volume", description: "See and set the volume" },
+    { command: "queue", description: "See the queue" },
 ], {
     scope: { type: "all_private_chats" }
 })
+
+

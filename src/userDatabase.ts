@@ -1,7 +1,8 @@
 import { User, UserState } from "./types"
 
-const userStates: { [id: number]: User | undefined } = {
+const userStates: { [id: number]: User | undefined } = {//load and save from file
     1340698323: { chatId: 1340698323, state: UserState.admin, name: "Johannes" },
+    5502414084: { chatId: 5502414084, state: UserState.admin, name: "Dylan" },
 }
 
 export function getUser(chatID: number): User {

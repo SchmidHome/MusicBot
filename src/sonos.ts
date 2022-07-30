@@ -1,4 +1,5 @@
 import { SonosDevice } from "@svrooij/sonos"
+import { isNotUndefined, isString } from "./helper"
 import { Song } from "./types"
 
 const device = new SonosDevice("192.168.1.207")
@@ -17,9 +18,15 @@ export async function getCurrentTrack(): Promise<string | undefined> {
     return sonosToSpotifyUri(state.positionInfo.TrackURI)
 }
 
-// export async function getQueue(): Promise<Song[]> {
-//     return [{ name: "test", artist: "art", album: "alb", image: "art" }] //todo
-// }
+export async function getQueue(): Promise<string[]> {
+    let _queue = (await device.GetQueue()).Result
+    if (typeof _queue === "string") return []
+
+    const running = (await device.AVTransportService.GetPositionInfo()).Track
+    _queue = _queue.slice(running)
+
+    return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri) //todo return type Song[]
+}
 
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
