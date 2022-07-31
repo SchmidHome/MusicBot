@@ -4,6 +4,8 @@ const userStates: { [id: number]: User | undefined } = {//load and save from fil
     1340698323: { chatId: 1340698323, state: UserState.admin, name: "Johannes" },
     5502414084: { chatId: 5502414084, state: UserState.admin, name: "Dylan" },
     5514678326: { chatId: 5514678326, state: UserState.dj, name: "Leonhard" },
+    5162370082: { chatId: 5162370082, state: UserState.dj, name: "Bene" },
+    5316395698: { chatId: 5316395698, state: UserState.dj, name: "Espi" },
 }
 
 export function getUser(chatID: number): User {

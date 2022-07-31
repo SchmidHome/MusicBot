@@ -77,15 +77,18 @@ bot.on("callback_query", async (query) => {
         }
 
     } else if (query.data.startsWith("/volume ")) {
-        const volume = parseInt(query.data.substring("/volume ".length))
-        if (volume >= 0 && volume <= 100) {
-            console.log(`${userToString(user)} set volume to ${volume}`)
-            await setVolume(volume)
-            await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-            await sendVolumeMessage(user, volume)
+        let volume
+        if (query.data.endsWith("+")) {
+            volume = (roundNearest5(await getVolume()) + 5)
         } else {
-            await bot.sendMessage(user.chatId, "Invalid volume")
+            volume = (roundNearest5(await getVolume()) - 5)
         }
+        if (volume < 0) volume = 0
+        if (volume > 100) volume = 100
+        console.log(`${userToString(user)} set volume to ${volume}`)
+        await setVolume(volume)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
+        await sendVolumeMessage(user, volume)
     }
 })
 
@@ -93,8 +96,8 @@ async function sendVolumeMessage(user: User, volume: number) {
     await bot.sendMessage(user.chatId, "Volume: " + volume, {
         parse_mode: "Markdown", reply_markup: {
             "inline_keyboard": [
-                [{ "text": "Increase", "callback_data": "/volume " + (roundNearest5(await getVolume()) + 5) },
-                { "text": "Decrease", "callback_data": "/volume " + (roundNearest5(await getVolume()) - 5) }],
+                [{ "text": "Increase", "callback_data": "/volume +" },
+                { "text": "Decrease", "callback_data": "/volume -" }],
             ]
         }
     })

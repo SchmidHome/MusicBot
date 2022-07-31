@@ -1,7 +1,10 @@
-import { SonosDevice } from "@svrooij/sonos"
+import { SonosDevice, SonosDeviceDiscovery } from "@svrooij/sonos"
 import { isNotUndefined, isString } from "./helper"
 import { getCurrentSongFromUri } from "./spotify"
 import { Song } from "./types"
+
+// const disc = new SonosDeviceDiscovery()
+
 
 const device = new SonosDevice("192.168.1.90")
 
@@ -11,7 +14,7 @@ function log(msg: string, ...args: any[]) {
 }
 
 
-function sonosToSpotifyUri(uri: string): string {
+export function sonosToSpotifyUri(uri: string): string {
     const res = /x-sonos-spotify:spotify:track:(\w{22})?.*/.exec(uri)
     if (res === null) throw new Error("Invalid Sonos URI")
     const baseUri = res[1]
@@ -51,7 +54,7 @@ export async function addToQueue(uri: string): Promise<boolean> {
 }
 
 export async function getVolume(): Promise<number> {
-    return (await device.GetState()).volume
+    return (await device.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
