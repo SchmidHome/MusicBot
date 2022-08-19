@@ -2,7 +2,7 @@ import SpotifyWebApi from 'spotify-web-api-node'
 import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
 import { Song } from './types'
 import { between } from './helper'
-import { addToQueue, getUriQueueAll, sonosToSpotifyUri } from './sonos'
+import { addToQueue, getAllSongs } from './sonos'
 
 const CT = "[SPOTIFY] "
 function log(msg: string, ...args: any[]) {
@@ -25,19 +25,25 @@ async function setup() {
 }
 setup()
 
+
+function trackToSong(track: SpotifyApi.TrackObjectFull): Song {
+    return {
+        name: track.name,
+        artist: track.artists.map(a => a.name).join(", "),
+        album: track.album.name,
+        imageUri: track.album.images[0].url,
+        spotifyUri: track.uri,
+        duration: track.duration_ms,
+    }
+}
+
 export async function querySong(song: string): Promise<Song | undefined> {
     const tracks = (await spotify.searchTracks(song)).body.tracks?.items || []
 
     if (tracks.length === 0)
         return undefined
     const track = tracks[0]
-    return {
-        name: track.name,
-        artist: track.artists.map(a => a.name).join(", "),
-        album: track.album.name,
-        imageUri: track.album.images[0].url,
-        spotifyUri: track.uri
-    }
+    return trackToSong(track)
 }
 
 // ##############################################
@@ -62,22 +68,17 @@ setInterval(() => {
     if (allowedRequests > 10) allowedRequests = 10
 }, 1000)
 
-export async function getCurrentSongFromUri(uri: string): Promise<Song> {
+export async function getSongFromUri(uri: string): Promise<Song> {
     if (!cashedSongs[uri]) {
-        while (!allowedRequests) {
+        while (allowedRequests <= 0) {
             await new Promise(resolve => setTimeout(resolve, 1000))
         }
         if (!cashedSongs[uri]) {
+            allowedRequests--
             const id = uri.slice(-22)
             log("Getting song", id)
             const track = await spotify.getTrack(id)
-            cashedSongs[uri] = {
-                name: track.body.name,
-                artist: track.body.artists.map(a => a.name).join(", "),
-                album: track.body.album.name,
-                imageUri: track.body.album.images[0].url,
-                spotifyUri: track.body.uri
-            }
+            cashedSongs[uri] = trackToSong(track.body)
         }
     }
     return cashedSongs[uri];
@@ -97,7 +98,7 @@ async function getNewTrackNumber(playlist: SpotifyApi.PlaylistTrackResponse) {
 
 // checks if the song was one of the last 10 songs
 export async function songPlayedRecently(uri: string) {
-    const recentlyPlayed = (await getUriQueueAll()).slice(-10)
-    log("Song has played recently: " + (await (await recentlyPlayed).includes(uri)) )
+    const recentlyPlayed = (await getAllSongs()).slice(-10)
+    log("Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
     return (await (await recentlyPlayed).includes(uri))
 }

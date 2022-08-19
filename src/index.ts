@@ -1,7 +1,7 @@
-import { Message, BotCommandScopeAllPrivateChats } from "node-telegram-bot-api"
+import { Message } from "node-telegram-bot-api"
 import { assertIsMatch, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
-import { addToQueue, getCurrentTrack, getSongQueue, getVolume, setVolume } from "./sonos"
-import { addTrackFromDefaultPlaylist, getCurrentSongFromUri as getSongFromUri, querySong, songPlayedRecently } from "./spotify"
+import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getTrackInfo, getVolume, setVolume } from "./sonos"
+import { addTrackFromDefaultPlaylist, getSongFromUri as getSongFromUri, querySong, songPlayedRecently } from "./spotify"
 import { bot } from "./telegram"
 import { User, UserState } from "./types"
 import { getUser, setUser, userToString } from "./userDatabase"
@@ -70,7 +70,7 @@ bot.on("callback_query", async (query) => {
         } else {
             console.log(`${userToString(user)} added ${(await getSongFromUri(uri)).name} to queue`)
             if (await addToQueue(uri)) {
-                bot.sendMessage(user.chatId, "Song added to queue")
+                bot.sendMessage(user.chatId, `Song added to queue (position ${await getPositionInQueue(uri)})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
             } else {
                 bot.sendMessage(user.chatId, "Could not add song to queue")
             }
@@ -143,7 +143,9 @@ bot.onText(/\/state/, (msg, match) => {
 
 bot.onText(/\/queue/, async (msg, match) => {
     const user = getUser(msg.chat.id)
-    bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getSongQueue()).map(getSongFromUri))).map(s => s.name + " by " + s.artist).join("\n"))
+    bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(getSongFromUri).map(async s =>
+        `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
+        { parse_mode: "Markdown" })
 })
 
 bot.onText(/\/playing/, async (msg, match) => {
@@ -169,7 +171,7 @@ function roundNearest5(num: number) {
 
 // ############################################## QUEUE
 setInterval(async () => {
-    const queue = await getSongQueue()
+    const queue = await getQueue()
     if (queue.length == 0) {
         await addTrackFromDefaultPlaylist()
     }
@@ -183,8 +185,6 @@ bot.setMyCommands([
     { command: "volume", description: "See and set the volume" },
     { command: "queue", description: "See the queue" },
     { command: "playing", description: "See the currently playing song" },
-], {
-    scope: { type: "all_private_chats" }
-})
+])
 
 

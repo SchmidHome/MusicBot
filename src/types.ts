@@ -6,9 +6,9 @@ export enum UserState {
 }
 
 export interface User {
-    state: UserState,
-    name?: string,
     chatId: number,
+    name?: string,
+    state: UserState,
 }
 export interface RegisteredUser extends User {
     state: Exclude<UserState, UserState.unknown>,
@@ -21,4 +21,5 @@ export interface Song {
     album: string
     imageUri: string
     spotifyUri: string
+    duration: number
 }
