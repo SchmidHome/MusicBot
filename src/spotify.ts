@@ -2,7 +2,7 @@ import SpotifyWebApi from 'spotify-web-api-node'
 import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
 import { Song } from './types'
 import { between } from './helper'
-import { addToQueue, getAllSongs } from './sonos'
+import { addToQueue, getAllSongs, getCurrentTrack, getTrackInfo } from './sonos'
 
 const CT = "[SPOTIFY] "
 function log(msg: string, ...args: any[]) {
@@ -97,7 +97,7 @@ async function getNewTrackNumber(playlist: SpotifyApi.PlaylistTrackResponse) {
 
 // checks if the song was one of the last 10 songs
 export async function songPlayedRecently(uri: string) {
-    const recentlyPlayed = (await getAllSongs()).slice(-10)
+    const recentlyPlayed = (await getAllSongs()).slice(-10 - (await getTrackInfo()).Track)
     log("Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
-    return (await (await recentlyPlayed).includes(uri))
+    return recentlyPlayed.includes(uri)
 }

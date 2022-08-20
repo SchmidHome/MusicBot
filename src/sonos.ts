@@ -94,7 +94,9 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
         log("adding to queue ", uri)
-        await (await device()).AddUriToQueue(uri)
+        const d = await device()
+
+        await (await device()).AddUriToQueue(uri, 1e6)
         queueCache.remove("")
         return true
     } catch (error) {
@@ -103,15 +105,30 @@ export async function addToQueue(uri: string): Promise<boolean> {
     }
 }
 
+let targetVolume: number | undefined = undefined
+
 export async function getVolume(): Promise<number> {
-    return (await (await device()).GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
+    if (targetVolume === undefined) {
+        log("getting volume")
+        const d = await device()
+        targetVolume = (await d.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
+    }
+    return targetVolume
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
     log("setting volume to ", volume)
+    targetVolume = volume
+    return await applyVolume()
+}
 
+async function applyVolume() {
+    const target = targetVolume
+    if (target === undefined) return false
     let members = (await (await device()).GetZoneGroupState()).find(v => v.coordinator.name == "0 Wohnzimmer")?.members
     if (!members) return false
-    return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(volume)))).reduce((acc, v) => acc && v, true)
-    // return device.GroupRenderingControlService.SetGroupVolume({ InstanceID: 0, DesiredVolume: volume })
+    return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(target)))).reduce((acc, v) => acc && v, true)
 }
+
+setTimeout(getVolume, 1000)
+setInterval(applyVolume, 10000)

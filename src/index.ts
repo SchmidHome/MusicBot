@@ -93,7 +93,7 @@ bot.on("callback_query", async (query) => {
 })
 
 async function sendVolumeMessage(user: User, volume: number) {
-    await bot.sendMessage(user.chatId, "Volume: " + volume, {
+    let msg = await bot.sendMessage(user.chatId, "Volume: " + volume, {
         parse_mode: "Markdown", reply_markup: {
             "inline_keyboard": [
                 [{ "text": "Increase", "callback_data": "/volume +" },
@@ -101,8 +101,13 @@ async function sendVolumeMessage(user: User, volume: number) {
             ]
         }
     })
-}
 
+    setTimeout(async () => {
+        try {
+            await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msg.message_id })
+        } catch (error) { }
+    }, 5000)
+}
 
 // ############################################## MESSAGE PARSER
 bot.on('message', (msg) => {
@@ -180,11 +185,9 @@ setInterval(async () => {
 // ############################################## REGISTER COMMANDS
 
 bot.setMyCommands([
-    { command: "start", description: "Login to your Bot" },
-    { command: "state", description: "Get your current state" },
     { command: "volume", description: "See and set the volume" },
     { command: "queue", description: "See the queue" },
     { command: "playing", description: "See the currently playing song" },
+    { command: "state", description: "Get your current state" },
+    { command: "start", description: "Login to your Bot" },
 ])
-
-
