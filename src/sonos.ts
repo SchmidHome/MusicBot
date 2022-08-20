@@ -1,14 +1,26 @@
-import { SonosDevice, SonosDeviceDiscovery } from "@svrooij/sonos"
+import { SonosDevice, SonosDeviceDiscovery, SonosManager } from "@svrooij/sonos"
 import { isString } from "./helper"
 import { SimpleCache } from "@idot-digital/simplecache"
 import { GetPositionInfoResponse } from "@svrooij/sonos/lib/services"
 import { getSongFromUri } from "./spotify"
 
-// const disc = new SonosDeviceDiscovery()
+const manager = new SonosManager()
+manager.InitializeFromDevice(process.env.SONOS_HOST || '192.168.1.90')
+    .then(() => {
+        manager.Devices.forEach(d => log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
+    })
+
+const deviceName = "0 Wohnzimmer"
 
 
-const device = new SonosDevice("192.168.1.90")
-// const device = new SonosDevice("192.168.1.207")
+
+async function device(name = deviceName) {
+    const d = manager.Devices.find(d => d.Name === name)
+    if (!d) {
+        throw new Error(`Device ${name} not found`)
+    }
+    return d
+}
 
 const CT = "[ SONOS ] "
 function log(msg: string, ...args: any[]) {
@@ -17,9 +29,9 @@ function log(msg: string, ...args: any[]) {
 
 // ############################################## CACHE
 
-const trackinfoCache = new SimpleCache(5000, async (_) => await device.AVTransportService.GetPositionInfo())
+const trackinfoCache = new SimpleCache(5000, async (_) => await (await device()).AVTransportService.GetPositionInfo())
 const queueCache = new SimpleCache(10000, async (_) => {
-    let _queue = (await device.GetQueue()).Result
+    let _queue = (await (await device()).GetQueue()).Result
     if (typeof _queue === "string") return []
     return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
 })
@@ -43,7 +55,7 @@ export function timeStringToSeconds(time: string): number {
 // ############################################## FUNCTIONS
 
 export async function getCurrentTrack(): Promise<string | undefined> {
-    let state = await device.GetState() //todo use getTrackInfo()
+    let state = await (await device()).GetState() //todo use getTrackInfo()
     return sonosToSpotifyUri(state.positionInfo.TrackURI)
 }
 
@@ -82,7 +94,7 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
         log("adding to queue ", uri)
-        await device.AddUriToQueue(uri)
+        await (await device()).AddUriToQueue(uri)
         queueCache.remove("")
         return true
     } catch (error) {
@@ -92,10 +104,14 @@ export async function addToQueue(uri: string): Promise<boolean> {
 }
 
 export async function getVolume(): Promise<number> {
-    return (await device.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
+    return (await (await device()).GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
     log("setting volume to ", volume)
-    return device.GroupRenderingControlService.SetGroupVolume({ InstanceID: 0, DesiredVolume: volume })
+
+    let members = (await (await device()).GetZoneGroupState()).find(v => v.coordinator.name == "0 Wohnzimmer")?.members
+    if (!members) return false
+    return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(volume)))).reduce((acc, v) => acc && v, true)
+    // return device.GroupRenderingControlService.SetGroupVolume({ InstanceID: 0, DesiredVolume: volume })
 }

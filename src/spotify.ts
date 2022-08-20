@@ -64,9 +64,8 @@ const cashedSongs: { [uri: string]: Song } = {}
 
 let allowedRequests = 10
 setInterval(() => {
-    allowedRequests++
-    if (allowedRequests > 10) allowedRequests = 10
-}, 1000)
+    allowedRequests = 10
+}, 2000)
 
 export async function getSongFromUri(uri: string): Promise<Song> {
     if (!cashedSongs[uri]) {
