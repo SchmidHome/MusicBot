@@ -2,7 +2,7 @@ import { User, UserState } from "./types"
 import { JSONFileHandler } from "@idot-digital/simplecache"
 
 
-const file = new JSONFileHandler("users.json", 1000)
+const file = new JSONFileHandler("data/users.json", 1000)
 
 
 const userStates: { [id: number]: User | undefined } = {}
