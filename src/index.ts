@@ -1,6 +1,6 @@
 import { Message } from "node-telegram-bot-api"
 import { assertIsMatch, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
-import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getTrackInfo, getVolume, setVolume } from "./sonos"
+import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getTrackInfo, getVolume, removeFromQueue, setVolume } from "./sonos"
 import { addTrackFromDefaultPlaylist, getSongFromUri as getSongFromUri, querySong, songPlayedRecently } from "./spotify"
 import { bot } from "./telegram"
 import { User, UserState } from "./types"
@@ -70,10 +70,21 @@ bot.on("callback_query", async (query) => {
         } else {
             console.log(`${userToString(user)} added ${(await getSongFromUri(uri)).name} to queue`)
             if (await addToQueue(uri)) {
-                bot.sendMessage(user.chatId, `Song added to queue (position ${await getPositionInQueue(uri)})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
+                await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]] }, { chat_id: user.chatId, message_id: query.message!.message_id })
+                await bot.sendMessage(user.chatId, `Song added to queue (position ${(await getPositionInQueue(uri)) + 1})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
             } else {
-                bot.sendMessage(user.chatId, "Could not add song to queue")
+                await bot.sendMessage(user.chatId, "Could not add song to queue")
             }
+        }
+        
+    } else if (query.data.startsWith("/rem ")) {
+        const uri = query.data.substring("/rem ".length)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
+        if (await removeFromQueue(uri)) {
+            await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: query.message!.message_id })
+            await bot.sendMessage(user.chatId, "Song removed from queue")
+        } else {
+            await bot.sendMessage(user.chatId, "Could not remove song from queue")
         }
 
     } else if (query.data.startsWith("/volume ")) {

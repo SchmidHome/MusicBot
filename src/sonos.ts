@@ -5,12 +5,12 @@ import { GetPositionInfoResponse } from "@svrooij/sonos/lib/services"
 import { getSongFromUri } from "./spotify"
 
 const manager = new SonosManager()
-manager.InitializeFromDevice(process.env.SONOS_HOST || '192.168.1.90')
+manager.InitializeFromDevice(process.env.SONOS_HOST || '192.168.1.207')
     .then(() => {
         manager.Devices.forEach(d => log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
     })
 
-const deviceName = "0 Wohnzimmer"
+const deviceName = "1 Johannes"
 
 
 
@@ -68,14 +68,19 @@ export async function getQueue(): Promise<string[]> {
 }
 
 export async function getPositionInQueue(uri: string): Promise<number> {
-    const queue = await getQueue();
-    return queue.indexOf(uri) + 1;
+    const queue = await getQueue()
+    return queue.indexOf(uri)
+}
+
+export async function getPositionInAllSongs(uri: string): Promise<number> {
+    const queue = await getAllSongs()
+    return queue.indexOf(uri)
 }
 
 export async function getScheduledTime(uri: string): Promise<Date> {
     const now = Date.now()
     const queue = await getQueue();
-    const posInfo = (await trackinfoCache.get(""))!
+    const posInfo = await getTrackInfo()
 
     const FaderTime = 12000 //TODO check if crossfade is enabled
 
@@ -94,9 +99,33 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
         log("adding to queue ", uri)
-        const d = await device()
-
         await (await device()).AddUriToQueue(uri, 1e6)
+        queueCache.remove("")
+        return true
+    } catch (error) {
+        console.error(error)
+        return false
+    }
+}
+
+export async function removeFromQueue(uri: string): Promise<boolean> {
+    try { //TODO fix this
+        let pos = await getPositionInAllSongs(uri)
+        if (pos === -1) {
+            log("can not remove ", uri)
+            return false
+        }
+        log("removing from queue ", uri)
+
+        const UpdateID = (await (await device()).GetQueue()).UpdateID
+        log("UpdateID: ", UpdateID)
+
+        await (await device()).QueueService.RemoveTrackRange({
+            QueueID: 0,
+            UpdateID: UpdateID,
+            StartingIndex: await getPositionInAllSongs(uri),
+            NumberOfTracks: 1
+        })
         queueCache.remove("")
         return true
     } catch (error) {
@@ -125,7 +154,7 @@ export async function setVolume(volume: number): Promise<boolean> {
 async function applyVolume() {
     const target = targetVolume
     if (target === undefined) return false
-    let members = (await (await device()).GetZoneGroupState()).find(v => v.coordinator.name == "0 Wohnzimmer")?.members
+    let members = (await (await device()).GetZoneGroupState()).find(v => v.coordinator.name == deviceName)?.members
     if (!members) return false
     return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(target)))).reduce((acc, v) => acc && v, true)
 }
