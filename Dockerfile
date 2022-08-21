@@ -7,7 +7,7 @@ WORKDIR /usr/app
 ADD package.json .
 ADD yarn.lock .
 
-RUN yarn install --production
+RUN yarn install
 
 ADD tsconfig.json .
 ADD src src
