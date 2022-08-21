@@ -1,19 +1,37 @@
-FROM alpine
+FROM alpine as time
 
-RUN apk add --update nodejs yarn
+RUN apk add tzdata && cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime && echo "Europe/Berlin" > /etc/timezone
 
-WORKDIR /usr/app
+FROM node:alpine as builder
 
-ADD package.json .
-ADD yarn.lock .
+WORKDIR /usr/src/app
+
+COPY . . 
 
 RUN yarn install
 
-ADD tsconfig.json .
-ADD src src
-
 RUN yarn build
 
-ADD . .
+FROM node:alpine as dependencies
 
-CMD [ "yarn", "start" ]
+WORKDIR /usr/src/app
+
+COPY . .
+
+RUN yarn install --production
+
+FROM alpine
+
+RUN apk add --update nodejs
+
+WORKDIR /usr/app
+
+COPY --from=time /etc/timezone /etc/timezone
+COPY --from=time /etc/localtime /etc/localtime
+
+COPY --from=builder /usr/src/app/out /usr/app/out
+
+COPY --from=dependencies /usr/src/app/node_modules /usr/app/node_modules
+
+EXPOSE 3000
+CMD [ "node", "out/index.js" ]
