@@ -37,7 +37,7 @@ steps:
   commands:
   - sleep 6
   - docker image rm -f musicbot:build-${DRONE_BUILD_NUMBER}
-  - docker image prune -f
+  # - docker image prune -f
   when:
     status:
     - failure
