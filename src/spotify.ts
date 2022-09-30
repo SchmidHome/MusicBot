@@ -15,7 +15,8 @@ const spotify = new SpotifyWebApi({
     clientSecret: SPOTIFY_CLIENT_SECRET,
 })
 
-const backgroundPlaylistLink = "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6"
+// const backgroundPlaylistLink = "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6"
+const backgroundPlaylistLink = "https://open.spotify.com/playlist/44Ic3lwwHnisSacD6SIusN?si=b4Mwd3dkRtGJmyvsgml0oQ&utm_source=whatsapp"
 
 async function setup() {
     let token = (await spotify.clientCredentialsGrant()).body;
@@ -52,9 +53,10 @@ export async function addTrackFromDefaultPlaylist() {
     try {
         log("Adding track from default playlist")
         const playlist = (await spotify.getPlaylistTracks(backgroundPlaylistLink.slice(34, 56))).body;
+        // (await spotify.getPlaylist(backgroundPlaylistLink.slice(34, 56))).body.name
+        // console.log(playlist)
         if (playlist == null) { return }
-        const track = playlist.items[await getNewTrackNumber(playlist)].track
-        if (track == null) { return }
+        const track = await getNewTrack(playlist)
         await addToQueue(track.uri)
     } catch (error) {
         console.error(error);
@@ -84,20 +86,21 @@ export async function getSongFromUri(uri: string): Promise<Song> {
 }
 
 // return the next track number if song has not played recently. Make sure Playlist has more than 10 Songs!
-async function getNewTrackNumber(playlist: SpotifyApi.PlaylistTrackResponse) {
-    const newTrackNumber = between(0, playlist.items.length)
+async function getNewTrack(playlist: SpotifyApi.PlaylistTrackResponse): Promise<SpotifyApi.TrackObjectFull> {
     const track = playlist.items[between(0, playlist.items.length)].track
     if (track == undefined) { throw new Error("Track is undefined") }
     const uri = track.uri
+    log("selecting random Track: " + uri)
     if (await songPlayedRecently(uri)) {
-        getNewTrackNumber(playlist)
+        return getNewTrack(playlist)
+    } else {
+        return track
     }
-    return newTrackNumber
 }
 
-// checks if the song was one of the last 10 songs
+// checks if the song was one of the last 20 songs
 export async function songPlayedRecently(uri: string) {
-    const recentlyPlayed = (await getAllSongs()).slice(-10 - (await getTrackInfo()).Track)
+    const recentlyPlayed = (await getAllSongs()).slice(-20 - (await getTrackInfo()).Track)
     log("Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
     return recentlyPlayed.includes(uri)
 }
