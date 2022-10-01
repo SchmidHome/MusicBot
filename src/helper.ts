@@ -32,4 +32,4 @@ export function assertIsMatch(match: RegExpExecArray | null): asserts match is R
 
 export function between(min: number, max: number) {
     return Math.floor(Math.random() * (max - min) + min);
-  }
+}

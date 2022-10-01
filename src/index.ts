@@ -76,7 +76,7 @@ bot.on("callback_query", async (query) => {
                 await bot.sendMessage(user.chatId, "Could not add song to queue")
             }
         }
-        
+
     } else if (query.data.startsWith("/rem ")) {
         const uri = query.data.substring("/rem ".length)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
@@ -181,17 +181,28 @@ bot.onText(/\/volume/, async (msg, match) => {
     sendVolumeMessage(user, volume)
 })
 
+// bot.onText(/\/control (on|off)/, async(msg, match) => {
+//     const user = getUser(msg.chat.id)
+//     if(user.state !== UserState.admin) {
+//         bot.sendMessage(user.chatId, "You are not an admin!")
+//     } else {
+
+//     }
+// })
+
 function roundNearest5(num: number) {
     return Math.round(num / 5) * 5;
 }
 
 // ############################################## QUEUE
-setInterval(async () => {
+async function checkQueue() {
     const queue = await getQueue()
     if (queue.length < 2) {
         await addTrackFromDefaultPlaylist()
     }
-}, 20 * 1000)
+}
+setTimeout(checkQueue, 2 * 1000)
+setInterval(checkQueue, 20 * 1000)
 
 // ############################################## REGISTER COMMANDS
 
