@@ -14,5 +14,6 @@ async function checkQueue() {
         await addTrackFromDefaultPlaylist()
     }
 }
+
 setTimeout(checkQueue, 2 * 1000)
 setInterval(checkQueue, 20 * 1000)

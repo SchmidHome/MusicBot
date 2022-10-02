@@ -1,65 +1,104 @@
 import SpotifyWebApi from 'spotify-web-api-node'
-import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
+import { PLAYLIST_FILE, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
 import { Song } from './types'
-import { between } from './helper'
-import { addToQueue, getAllSongs, getCurrentTrack, getTrackInfo } from './sonos'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { assertIsNotNullOrUndefined, between } from './helper'
+import { addToQueue, getAllSongs, getTrackInfo } from './sonos'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { ConsoleLogger } from './logger'
+import { JSONFileHandler, SimpleCache } from "@idot-digital/simplecache"
 
 
 const logger = new ConsoleLogger("spotify")
-
-const playlistFile = "data/playlists.json"
-// make sure data/playlists.json exists
-if (!existsSync("data")) {
-    mkdirSync("data")
-}
-if (!existsSync(playlistFile)) {
-    writeFileSync(playlistFile, JSON.stringify([
-        {
-            name: "Johannes Partymix",
-            uri: "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6",
-            probability: 1
-        }
-    ]))
-}
-
-const backgroundPlaylists: { name: string, uri: string, probability: number }[] = (() => {
-    const list = JSON.parse(readFileSync(playlistFile, "utf8"))
-    //multiply the probability of each playlist
-    const result: { name: string, uri: string, probability: number }[] = []
-    list.forEach((p: { name: string, uri: string, probability: number }) => {
-        if (p.probability != Math.round(p.probability)) throw new Error("Probability must be an integer")
-        if (p.probability < 0) throw new Error("Probability must be positive")
-        for (let i = 0; i < p.probability; i++) {
-            result.push(p)
-        }
-    })
-    return result
-})()
-
-
 
 const spotify = new SpotifyWebApi({
     clientId: SPOTIFY_CLIENT_ID,
     clientSecret: SPOTIFY_CLIENT_SECRET,
 })
 
-
-// const backgroundPlaylistLink = "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6"
-// const backgroundPlaylistLink = "https://open.spotify.com/playlist/44Ic3lwwHnisSacD6SIusN?si=b4Mwd3dkRtGJmyvsgml0oQ&utm_source=whatsapp"
-
-async function setup() {
-    let token = (await spotify.clientCredentialsGrant()).body;
-    spotify.setAccessToken(token.access_token);
-    logger.log("Token refreshed");
-    setTimeout(setup, (token.expires_in - 30) * 1000);
+// make sure data/playlists.json exists
+if (!existsSync("data")) {
+    mkdirSync("data")
 }
-setup()
+if (!existsSync(PLAYLIST_FILE)) {
+    writeFileSync(PLAYLIST_FILE, JSON.stringify([{
+        name: "Johannes Partymix",
+        uri: "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6",
+        selected: true
+    }]))
+}
+const backgroundPlaylists = new JSONFileHandler(PLAYLIST_FILE, 1000)
 
+
+export async function getBackgroundPlaylists(): Promise<{ name: string, uri: string, selected: boolean }[]> {
+    return await backgroundPlaylists.get()
+}
+
+export const playlistCache = new SimpleCache(60000, async (uri: string) => {
+    const id = uri.slice(34, 56)
+    // const playlist = await spotify.getPlaylist(id)
+    logger.log(`loading playlist ${id}`)
+
+    const songs: Song[] = []
+    let offset = 0
+    let result
+    do {
+        result = (await spotify.getPlaylistTracks(id, { offset })).body
+        songs.push(...result.items.filter(e => e.track).map(e => trackToSong(e.track!)))
+        // logger.log(`Loaded ${songs.length} songs...`)
+        offset = result.offset + result.limit
+    } while (result.next);
+
+    return (await spotify.getPlaylistTracks(id)).body
+})
+
+export async function getActiveBackgroundPlaylist(): Promise<{ songs: Song[], name: string } | undefined> {
+    let selected = (await getBackgroundPlaylists()).find(e => e.selected)
+    if (selected == undefined) { return undefined }
+    const playlist = await playlistCache.get(selected.uri)
+    assertIsNotNullOrUndefined(playlist)
+    return {
+        songs: playlist.items.filter(e => e.track).map(e => trackToSong(e.track!)),
+        name: selected.name
+    }
+}
+
+export async function addBackgroundPlaylist(name: string, uri: string) {
+    const list = await getBackgroundPlaylists()
+    list.push({ name, uri, selected: false })
+    backgroundPlaylists.set(list)
+}
+
+export async function selectBackgroundPlaylist(name: string) {
+    const list = await getBackgroundPlaylists()
+    list.forEach(e => e.selected = e.name == name)
+    backgroundPlaylists.set(list)
+}
+
+// ############################################## CONVERT/FIND
+const cashedSongs: { [uri: string]: Song } = {}
+
+let allowedRequests = 0
+setInterval(() => {
+    allowedRequests = 10
+}, 2000)
+export async function uriToSong(uri: string): Promise<Song> {
+    if (!cashedSongs[uri]) {
+        while (allowedRequests <= 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        if (!cashedSongs[uri]) {
+            allowedRequests--
+            const id = uri.slice(-22)
+            logger.log("        get songs", id)
+            const track = await spotify.getTrack(id)
+            trackToSong(track.body)
+        }
+    }
+    return cashedSongs[uri];
+}
 
 function trackToSong(track: SpotifyApi.TrackObjectFull): Song {
-    return {
+    const song = {
         name: track.name,
         artist: track.artists.map(a => a.name).join(", "),
         album: track.album.name,
@@ -67,6 +106,8 @@ function trackToSong(track: SpotifyApi.TrackObjectFull): Song {
         spotifyUri: track.uri,
         duration: track.duration_ms,
     }
+    cashedSongs[track.uri] = song
+    return song
 }
 
 export async function querySong(song: string): Promise<Song | undefined> {
@@ -78,58 +119,42 @@ export async function querySong(song: string): Promise<Song | undefined> {
     return trackToSong(track)
 }
 
-// ##############################################
+// ############################################## MAIN
+
+async function setup() {
+    let token = (await spotify.clientCredentialsGrant()).body;
+    spotify.setAccessToken(token.access_token);
+    logger.log("Token refreshed");
+    setTimeout(setup, (token.expires_in - 30) * 1000);
+}
+setup()
 
 export async function addTrackFromDefaultPlaylist() {
     try {
-        // select random playlist depending on probability
-        const playlist = backgroundPlaylists[between(0, backgroundPlaylists.length)]
+        const playlist = await getActiveBackgroundPlaylist()
+        if (playlist == undefined) {
+            logger.warn(`No default playlist selected.`)
+            return
+        }
 
-        logger.log("DEFAULT [playlist] " + playlist.name)
-        const spotifyPlaylist = (await spotify.getPlaylistTracks(playlist.uri.slice(34, 56))).body;
-        // (await spotify.getPlaylist(backgroundPlaylistLink.slice(34, 56))).body.name
-        // console.logger.log(playlist)
-        if (spotifyPlaylist == null) { return }
-        const track = await getNewTrack(spotifyPlaylist)
-        await addToQueue(track.uri)
+        logger.log(`Adding track from ${playlist.name}`)
+        const song = await getNewTrack(playlist.songs)
+        await addToQueue(song.spotifyUri)
     } catch (error) {
-        console.error(error);
+        logger.error(error);
     }
-}
-const cashedSongs: { [uri: string]: Song } = {}
-
-let allowedRequests = 0
-setInterval(() => {
-    allowedRequests = 10
-}, 2000)
-
-export async function getSongFromUri(uri: string): Promise<Song> {
-    if (!cashedSongs[uri]) {
-        while (allowedRequests <= 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-        if (!cashedSongs[uri]) {
-            allowedRequests--
-            const id = uri.slice(-22)
-            logger.log("        get songs", id)
-            const track = await spotify.getTrack(id)
-            cashedSongs[uri] = trackToSong(track.body)
-        }
-    }
-    return cashedSongs[uri];
 }
 
 // return the next track number if song has not played recently. Make sure Playlist has more than 10 Songs!
-async function getNewTrack(playlist: SpotifyApi.PlaylistTrackResponse): Promise<SpotifyApi.TrackObjectFull> {
-    const track = playlist.items[between(0, playlist.items.length)].track
-    if (track == undefined) { throw new Error("Track is undefined") }
-    const uri = track.uri
-    if (await songPlayedRecently(uri)) {
-        logger.log("        [Track]: " + uri + " played recently")
+async function getNewTrack(playlist: Song[]): Promise<Song> {
+    const song = playlist[between(0, playlist.length)]
+
+    if (await songPlayedRecently(song.spotifyUri)) {
+        logger.log(`${song.name} (${song.artist}) has been played recently`)
         return getNewTrack(playlist)
     } else {
-        logger.log("        [Track]: " + uri + " adding")
-        return track
+        logger.log(`${song.name} (${song.artist}) selected`)
+        return song
     }
 }
 

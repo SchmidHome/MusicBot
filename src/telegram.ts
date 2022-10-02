@@ -1,14 +1,19 @@
-import TelegramBot, { Message } from 'node-telegram-bot-api'
+import { assert } from 'console'
+import TelegramBot, { CallbackQuery, Message } from 'node-telegram-bot-api'
 import { TELEGRAM_TOKEN } from "./config"
 
-import { assertIsMatch, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
+import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 import { ConsoleLogger } from './logger'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
-import { getSongFromUri, querySong, songPlayedRecently } from './spotify'
+import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, playlistCache, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist } from './spotify'
 import { User, UserState } from "./types"
 import { getUser, setUser, userToString } from "./userDatabase"
 
 const logger = new ConsoleLogger("telegram")
+
+function log(user: User, command: string, message?: string) {
+    logger.log(userToString(user) + " used " + command + (message ? ": " + message : ""))
+}
 
 export const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true })
 
@@ -20,6 +25,7 @@ export default function startTelegram() {
     // ############################################## START
     bot.onText(/^\/start *$/, async (msg) => {
         const user = getUser(msg.chat.id)
+        log(user, "/start")
         if (isRegistered(user)) {
             bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
         } else {
@@ -31,6 +37,7 @@ export default function startTelegram() {
     bot.onText(/^\/start (\S+) *$/, async (msg, match) => {
         const user = getUser(msg.chat.id)
         assertIsMatch(match)
+        log(user, "/start", match[1])
 
         if (isRegistered(user)) {
             bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
@@ -68,75 +75,26 @@ export default function startTelegram() {
         const user = getUser(query.message.chat.id)
         assertIsRegistered(user)
         assertIsNotUndefined(query.data)
-
         await bot.answerCallbackQuery(query.id)
 
         if (query.data.startsWith("/queue ")) {
-            const uri = query.data.substring("/queue ".length)
-            await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-            if (await songPlayedRecently(uri)) {
-                bot.sendMessage(user.chatId, "not again...")
-            } else {
-                logger.log(`${userToString(user)} added ${(await getSongFromUri(uri)).name} to queue`)
-                if (await addToQueue(uri)) {
-                    await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-                    await bot.sendMessage(user.chatId, `Song added to queue (position ${(await getPositionInQueue(uri)) + 1})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
-                } else {
-                    await bot.sendMessage(user.chatId, "Could not add song to queue")
-                }
-            }
-
+            await onAddSongCallback(user, query.data, query.message!.message_id)
         } else if (query.data.startsWith("/rem ")) {
-            const uri = query.data.substring("/rem ".length)
-            await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-            if (await removeFromQueue(uri)) {
-                await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-                await bot.sendMessage(user.chatId, "Song removed from queue")
-            } else {
-                await bot.sendMessage(user.chatId, "Could not remove song from queue")
-            }
-
+            await onRemoveSongCallback(user, query.data, query.message!.message_id)
         } else if (query.data.startsWith("/volume ")) {
-            let volume
-            if (query.data.endsWith("+")) {
-                volume = (roundNearest5(await getVolume()) + 5)
-            } else {
-                volume = (roundNearest5(await getVolume()) - 5)
-            }
-            if (volume < 0) volume = 0
-            if (volume > 100) volume = 100
-            logger.log(`${userToString(user)} set volume to ${volume}`)
-            await setVolume(volume)
-            await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: query.message!.message_id })
-            await sendVolumeMessage(user, volume)
+            await onVolumeCallback(user, query.data, query.message!.message_id)
+        } else if (query.data.startsWith("/playlist ")) {
+            await onPlaylistCallback(user, query.data, query.message!.message_id)
         }
     })
 
-    async function sendVolumeMessage(user: User, volume: number) {
-        let msg = await bot.sendMessage(user.chatId, "Volume: " + volume, {
-            parse_mode: "Markdown", reply_markup: {
-                "inline_keyboard": [
-                    [
-                        { "text": "Decrease", "callback_data": "/volume -" },
-                        { "text": "Increase", "callback_data": "/volume +" },
-                    ],
-                ]
-            }
-        })
-
-        setTimeout(async () => {
-            try {
-                await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msg.message_id })
-            } catch (error) { }
-        }, 5000)
-    }
-
-    // ############################################## MESSAGE PARSER
+    // ############################################## SEARCH/ADD/REMOVE SONG
     bot.on('message', (msg) => {
         assertIsNotUndefined(msg.text)
         if (msg.text.startsWith('/')) return
         const user = getUser(msg.chat.id)
         assertIsRegistered(user)
+        log(user, "messsage", msg.text)
 
         logger.log("message: " + msg.text + ", " + userToString(user))
         switch (user.state) {
@@ -147,7 +105,87 @@ export default function startTelegram() {
         }
     })
 
-    // ##############################################
+    async function onAddSongCallback(user: User, data: string, message_id: number) {
+        const uri = data.substring("/queue ".length)
+        log(user, "/queue", uri)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
+        if (await songPlayedRecently(uri)) {
+            bot.sendMessage(user.chatId, "not again...")
+        } else {
+            logger.log(`${userToString(user)} added ${(await uriToSong(uri)).name} to queue`)
+            if (await addToQueue(uri)) {
+                await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
+                await bot.sendMessage(user.chatId, `Song added to queue (position ${(await getPositionInQueue(uri)) + 1})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
+            } else {
+                await bot.sendMessage(user.chatId, "Could not add song to queue")
+            }
+        }
+    }
+    async function onRemoveSongCallback(user: User, data: string, message_id: number) {
+        const uri = data.substring("/rem ".length)
+        log(user, "/rem", uri)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
+        if (await removeFromQueue(uri)) {
+            await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
+            await bot.sendMessage(user.chatId, "Song removed from queue")
+        } else {
+            await bot.sendMessage(user.chatId, "Could not remove song from queue")
+        }
+    }
+
+    // ############################################## GET/SET DEFAULT PLAYLIST
+
+    bot.onText(/^\/playlist *$/, async (msg, match) => {
+        const user = getUser(msg.chat.id)
+        assertIsRegistered(user)
+        log(user, "/playlist")
+        // show current playlist and add buttons for each playlist
+        const playlists = await getBackgroundPlaylists()
+        const buttons = playlists.map((playlist) => {
+            return { "text": playlist.name, "callback_data": "/playlist " + playlist.name }
+        })
+        let msgText = `Current playlist:\n*${(await getActiveBackgroundPlaylist())?.name}*`
+        let msgSent = await bot.sendMessage(user.chatId, msgText, {
+            parse_mode: "Markdown", reply_markup: {
+                "inline_keyboard": user.state == UserState.admin ? buttons.map(v => [v]) : [[]]
+            }
+        })
+
+        // set timeout to delete buttons
+        setTimeout(async () => {
+            try {
+                await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msgSent.message_id })
+            } catch (error) { }
+        }, 10000)
+    })
+
+    bot.onText(/^\/playlist (https:\/\/open\.spotify\.com\/playlist\/\S*) (.*)$/, async (msg, match) => {
+        const user = getUser(msg.chat.id)
+        assertIsRegistered(user)
+        assertIsMatch(match)
+        log(user, "/playlist", match[1] + match[2])
+
+        try {
+            const uri = match[1]
+            const name = match[2]
+
+            const playlist = await playlistCache.get(uri)
+            assertIsNotNull(playlist)
+            await addBackgroundPlaylist(name, uri)
+            await selectBackgroundPlaylist(name)
+            await bot.sendMessage(user.chatId, `Added playlist ${name} to background playlists`)
+        } catch (error) {
+            await bot.sendMessage(user.chatId, "Could not add playlist")
+        }
+    })
+
+    async function onPlaylistCallback(user: User, data: string, message_id: number) {
+        const name = data.substring("/playlist ".length)
+        selectBackgroundPlaylist(name)
+        await bot.sendMessage(user.chatId, `Selected playlist *${name}* as background playlist`, { parse_mode: "Markdown" })
+    }
+
+    // ############################################## STATE
     bot.onText(/\/state/, (msg, match) => {
         const user = getUser(msg.chat.id)
         assertIsMatch(match)
@@ -168,42 +206,79 @@ export default function startTelegram() {
         }
     })
 
+    // ############################################## QUEUE
     bot.onText(/\/queue/, async (msg, match) => {
         const user = getUser(msg.chat.id)
-        bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(getSongFromUri).map(async s =>
+        bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
             `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
             { parse_mode: "Markdown" })
     })
 
+    // ############################################## PLAYING
     bot.onText(/\/playing/, async (msg, match) => {
         const user = getUser(msg.chat.id)
         const currentUri = await getCurrentTrack()
         if (!currentUri) {
             bot.sendMessage(user.chatId, "No song is playing")
         } else {
-            const currentSong = (await getSongFromUri(currentUri))
+            const currentSong = (await uriToSong(currentUri))
             bot.sendMessage(user.chatId, "Currently playing:\n" + currentSong.name + " by " + currentSong.artist)
         }
     })
+
+
+    // ############################################## VOLUME
+    async function sendVolumeMessage(user: User, volume: number) {
+        let msg = await bot.sendMessage(user.chatId, "Volume: " + volume, {
+            parse_mode: "Markdown", reply_markup: {
+                "inline_keyboard": [
+                    [
+                        { "text": "Decrease", "callback_data": "/volume -" },
+                        { "text": "Increase", "callback_data": "/volume +" },
+                    ],
+                ]
+            }
+        })
+
+        // set timeout to delete buttons
+        setTimeout(async () => {
+            try {
+                await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msg.message_id })
+            } catch (error) { }
+        }, 5000)
+    }
 
     bot.onText(/\/volume/, async (msg, match) => {
         const user = getUser(msg.chat.id)
         const volume = roundNearest5(await getVolume())
         sendVolumeMessage(user, volume)
     })
+    async function onVolumeCallback(user: User, data: string, message_id: number) {
+        log(user, "/volume", data)
+        let volume
+        if (data.endsWith("+")) {
+            volume = (roundNearest5(await getVolume()) + 5)
+        } else {
+            volume = (roundNearest5(await getVolume()) - 5)
+        }
+        if (volume < 0) volume = 0
+        if (volume > 100) volume = 100
+        logger.log(`${userToString(user)} set volume to ${volume}`)
+        await setVolume(volume)
+        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: message_id })
+        await sendVolumeMessage(user, volume)
+    }
 
     function roundNearest5(num: number) {
         return Math.round(num / 5) * 5;
     }
-
-    // ############################################## QUEUE
-
 
     // ############################################## REGISTER COMMANDS
 
     bot.setMyCommands([
         { command: "volume", description: "See and set the volume" },
         { command: "queue", description: "See the queue" },
+        { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
         { command: "playing", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },

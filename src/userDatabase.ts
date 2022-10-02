@@ -1,18 +1,17 @@
 import { User, UserState } from "./types"
 import { JSONFileHandler } from "@idot-digital/simplecache"
 import { existsSync, mkdirSync, writeFileSync } from "fs"
+import { USER_FILE } from "./config"
 
-const userFile = "data/users.json"
 // make sure data/users.json exists
 if (!existsSync("data")) {
     mkdirSync("data")
 }
-if (!existsSync(userFile)) {
-    writeFileSync(userFile, "[]")
+if (!existsSync(USER_FILE)) {
+    writeFileSync(USER_FILE, "[]")
 }
 
-const file = new JSONFileHandler("data/users.json", 1000)
-
+const file = new JSONFileHandler(USER_FILE, 1000)
 
 const userStates: { [id: number]: User | undefined } = {}
 

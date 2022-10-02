@@ -1,7 +1,7 @@
 import Express from 'express';
 import cors from 'cors';
 import { getCurrentTrack, getQueue, getScheduledTime, getTrackInfo, getVolume, timeStringToSeconds } from './sonos';
-import { getSongFromUri } from './spotify';
+import { uriToSong } from './spotify';
 import morgan from 'morgan';
 import { ConsoleLogger } from './logger';
 
@@ -24,7 +24,7 @@ export default function startExpress() {
         const queueURIs = await getQueue();
         const queue: QueueElement[] = await Promise.all(
             queueURIs.map(async (uri): Promise<QueueElement> => {
-                const song = await getSongFromUri(uri);
+                const song = await uriToSong(uri);
                 return {
                     name: song.name,
                     artist: song.artist,
@@ -39,7 +39,7 @@ export default function startExpress() {
     app.get("/playing", async (_, res) => {
         const currentTrackURI = await getCurrentTrack();
         if (!currentTrackURI) return res.status(404).send();
-        const song = await getSongFromUri(currentTrackURI);
+        const song = await uriToSong(currentTrackURI);
         const currentTrack: QueueElement = {
             name: song.name,
             artist: song.artist,

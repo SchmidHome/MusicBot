@@ -2,21 +2,20 @@ import { SonosManager } from "@svrooij/sonos"
 import { isString } from "./helper"
 import { SimpleCache } from "@idot-digital/simplecache"
 import { GetPositionInfoResponse } from "@svrooij/sonos/lib/services"
-import { getSongFromUri } from "./spotify"
+import { uriToSong } from "./spotify"
 import { ConsoleLogger } from "./logger"
+import { SONOS_DEVICE_IP, SONOS_DEVICE_NAME } from "./config"
 
 const logger = new ConsoleLogger("sonos")
 
 
 const manager = new SonosManager()
-manager.InitializeFromDevice(process.env.SONOS_HOST || '192.168.1.207')
+manager.InitializeFromDevice(SONOS_DEVICE_IP)
     .then(() => {
         manager.Devices.forEach(d => logger.log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
     })
 
-const deviceName = "0 Wohnzimmer"
-
-async function device(name = deviceName) {
+async function device(name = SONOS_DEVICE_NAME) {
     const d = manager.Devices.find(d => d.Name === name)
     if (!d) {
         throw new Error(`Device ${name} not found`)
@@ -57,7 +56,6 @@ export async function getCurrentTrack(): Promise<string | undefined> {
 }
 
 export async function getQueue(): Promise<string[]> {
-    logger.log("getQueue()")
     let _queue = await getAllSongs()
     const posInfo = await getTrackInfo()
 
@@ -87,7 +85,7 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 
     // queue tracks
     const queueTime = (await queue.slice(0, queue.indexOf(uri)).reduce(async (acc, uri) => {
-        const track = await getSongFromUri(uri)
+        const track = await uriToSong(uri)
         return await acc + track.duration - FaderTime
     }, Promise.resolve(0)))
 
@@ -153,10 +151,11 @@ export async function setVolume(volume: number): Promise<boolean> {
 }
 
 async function applyVolume() {
+    logger.log("applyVolume()")
     const target = targetVolume
     if (target === undefined) return false
     const d = await device()
-    let members = (await d.GetZoneGroupState()).find(v => v.coordinator.name == deviceName)?.members
+    let members = (await d.GetZoneGroupState()).find(v => v.coordinator.name == SONOS_DEVICE_NAME)?.members
     if (!members) return false
     return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(target)))).reduce((acc, v) => acc && v, true)
 }

@@ -22,6 +22,23 @@ export function assertIsNotUndefined(obj: anything): asserts obj is Exclude<anyt
     }
 }
 
+export function isNull(obj: anything): obj is null { return obj === null }
+export function isNotNull(obj: anything): obj is Exclude<anything, null> { return !isNull(obj) }
+export function assertIsNotNull(obj: anything): asserts obj is Exclude<anything, null> {
+    if (isNull(obj)) {
+        throw new Error("obj is null")
+    }
+}
+
+export function isNullOrUndefined(obj: anything): obj is null | undefined { return isNull(obj) || isUndefined(obj) }
+export function isNotNullOrUndefined(obj: anything): obj is Exclude<anything, null | undefined> { return !isNullOrUndefined(obj) }
+export function assertIsNotNullOrUndefined(obj: anything): asserts obj is Exclude<anything, null | undefined> {
+    if (isNullOrUndefined(obj)) {
+        throw new Error("obj is null or undefined")
+    }
+}
+
+
 // STRING
 export function isString(obj: anything): obj is string { return typeof obj === "string" }
 
