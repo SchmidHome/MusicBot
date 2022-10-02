@@ -1,18 +1,26 @@
 // loading environment variables out of .env fil
 import dotenv from "dotenv"
+import { ConsoleLogger } from "./logger"
 dotenv.config()
 
+const logger = new ConsoleLogger("config")
+
 let err = false
-function CONFIG(name: string, error_msg: string) {
+function CONFIG(name: string) {
     if (!process.env[name]) {
-        console.error("Error: " + error_msg)
+        logger.error("Specify " + name + " in .env file!")
+        
         err = true
     }
     return process.env[name] || ""
 }
 
-export const TELEGRAM_TOKEN = CONFIG("TELEGRAM_TOKEN", "Specify TELEGRAM_TOKEN in environment")
-export const SPOTIFY_CLIENT_ID = CONFIG("SPOTIFY_CLIENT_ID", "Specify SPOTIFY_CLIENT_ID in environment")
-export const SPOTIFY_CLIENT_SECRET = CONFIG("SPOTIFY_CLIENT_SECRET", "Specify SPOTIFY_CLIENT_SECRET in environment")
+logger.info("loading environment variables")
+export const TELEGRAM_TOKEN = CONFIG("TELEGRAM_TOKEN")
+export const SPOTIFY_CLIENT_ID = CONFIG("SPOTIFY_CLIENT_ID")
+export const SPOTIFY_CLIENT_SECRET = CONFIG("SPOTIFY_CLIENT_SECRET")
+export const USER_FILE = CONFIG("USER_FILE")
+export const PLAYLIST_FILE = CONFIG("PLAYLIST_FILE")
+export const SONOS_DEVICE_NAME = CONFIG("SONOS_DEVICE_NAME")
 
 if (err) process.exit(1)

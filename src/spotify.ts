@@ -4,11 +4,10 @@ import { Song } from './types'
 import { between } from './helper'
 import { addToQueue, getAllSongs, getCurrentTrack, getTrackInfo } from './sonos'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { ConsoleLogger } from './logger'
 
-const CT = "[SPOTIFY] "
-function log(msg: string, ...args: any[]) {
-    console.log(CT + msg, ...args)
-}
+
+const logger = new ConsoleLogger("spotify")
 
 const playlistFile = "data/playlists.json"
 // make sure data/playlists.json exists
@@ -53,7 +52,7 @@ const spotify = new SpotifyWebApi({
 async function setup() {
     let token = (await spotify.clientCredentialsGrant()).body;
     spotify.setAccessToken(token.access_token);
-    log("Token refreshed");
+    logger.log("Token refreshed");
     setTimeout(setup, (token.expires_in - 30) * 1000);
 }
 setup()
@@ -86,10 +85,10 @@ export async function addTrackFromDefaultPlaylist() {
         // select random playlist depending on probability
         const playlist = backgroundPlaylists[between(0, backgroundPlaylists.length)]
 
-        log("DEFAULT [playlist] " + playlist.name)
+        logger.log("DEFAULT [playlist] " + playlist.name)
         const spotifyPlaylist = (await spotify.getPlaylistTracks(playlist.uri.slice(34, 56))).body;
         // (await spotify.getPlaylist(backgroundPlaylistLink.slice(34, 56))).body.name
-        // console.log(playlist)
+        // console.logger.log(playlist)
         if (spotifyPlaylist == null) { return }
         const track = await getNewTrack(spotifyPlaylist)
         await addToQueue(track.uri)
@@ -112,7 +111,7 @@ export async function getSongFromUri(uri: string): Promise<Song> {
         if (!cashedSongs[uri]) {
             allowedRequests--
             const id = uri.slice(-22)
-            log("        get songs", id)
+            logger.log("        get songs", id)
             const track = await spotify.getTrack(id)
             cashedSongs[uri] = trackToSong(track.body)
         }
@@ -126,10 +125,10 @@ async function getNewTrack(playlist: SpotifyApi.PlaylistTrackResponse): Promise<
     if (track == undefined) { throw new Error("Track is undefined") }
     const uri = track.uri
     if (await songPlayedRecently(uri)) {
-        log("        [Track]: " + uri + " played recently")
+        logger.log("        [Track]: " + uri + " played recently")
         return getNewTrack(playlist)
     } else {
-        log("        [Track]: " + uri + " adding")
+        logger.log("        [Track]: " + uri + " adding")
         return track
     }
 }
@@ -137,6 +136,6 @@ async function getNewTrack(playlist: SpotifyApi.PlaylistTrackResponse): Promise<
 // checks if the song was one of the last 20 songs
 export async function songPlayedRecently(uri: string) {
     const recentlyPlayed = (await getAllSongs()).slice(-20 - (await getTrackInfo()).Track)
-    // log("        Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
+    // logger.log("        Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
     return recentlyPlayed.includes(uri)
 }

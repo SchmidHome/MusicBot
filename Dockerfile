@@ -35,3 +35,4 @@ COPY --from=dependencies /usr/src/app/node_modules /usr/app/node_modules
 
 EXPOSE 3000
 CMD [ "node", "out/index.js" ]
+# CMD [ "sh" ]

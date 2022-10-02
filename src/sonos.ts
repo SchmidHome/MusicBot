@@ -3,11 +3,15 @@ import { isString } from "./helper"
 import { SimpleCache } from "@idot-digital/simplecache"
 import { GetPositionInfoResponse } from "@svrooij/sonos/lib/services"
 import { getSongFromUri } from "./spotify"
+import { ConsoleLogger } from "./logger"
+
+const logger = new ConsoleLogger("sonos")
+
 
 const manager = new SonosManager()
 manager.InitializeFromDevice(process.env.SONOS_HOST || '192.168.1.207')
     .then(() => {
-        manager.Devices.forEach(d => log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
+        manager.Devices.forEach(d => logger.log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
     })
 
 const deviceName = "0 Wohnzimmer"
@@ -18,11 +22,6 @@ async function device(name = deviceName) {
         throw new Error(`Device ${name} not found`)
     }
     return d.Coordinator
-}
-
-const CT = "[ SONOS ] "
-function log(msg: string, ...args: any[]) {
-    console.log(CT + msg, ...args)
 }
 
 // ############################################## CACHE
@@ -53,12 +52,12 @@ export function timeStringToSeconds(time: string): number {
 // ############################################## FUNCTIONS
 
 export async function getCurrentTrack(): Promise<string | undefined> {
-    log("getCurrentTrack()")
+    logger.log("getCurrentTrack()")
     return sonosToSpotifyUri((await getTrackInfo()).TrackURI)
 }
 
 export async function getQueue(): Promise<string[]> {
-    log("getQueue()")
+    logger.log("getQueue()")
     let _queue = await getAllSongs()
     const posInfo = await getTrackInfo()
 
@@ -97,7 +96,7 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 
 export async function addToQueue(uri: string): Promise<boolean> {
     try {
-        log(`addToQueue(${uri})`)
+        logger.log(`addToQueue(${uri})`)
         await (await device()).AddUriToQueue(uri, 1e6)
         queueCache.remove("")
         return true
@@ -109,16 +108,16 @@ export async function addToQueue(uri: string): Promise<boolean> {
 
 export async function removeFromQueue(uri: string): Promise<boolean> {
     try { //TODO fix this
-        log(`removeFromQueue(${uri})`)
+        logger.log(`removeFromQueue(${uri})`)
         let pos = await getPositionInAllSongs(uri)
         if (pos === -1) {
-            log("can not remove ", uri)
+            logger.log("can not remove ", uri)
             return false
         }
-        log("removing from queue ", uri)
+        logger.log("removing from queue ", uri)
 
         const UpdateID = (await (await device()).GetQueue()).UpdateID
-        log("UpdateID: ", UpdateID)
+        logger.log("UpdateID: ", UpdateID)
 
         let d = await device()
 
@@ -140,7 +139,7 @@ let targetVolume: number | undefined = undefined
 
 export async function getVolume(): Promise<number> {
     if (targetVolume === undefined) {
-        log("getVolume()")
+        logger.log("getVolume()")
         const d = await device()
         targetVolume = (await d.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
     }
@@ -148,7 +147,7 @@ export async function getVolume(): Promise<number> {
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
-    log(`setVolume(${volume})`)
+    logger.log(`setVolume(${volume})`)
     targetVolume = volume
     return await applyVolume()
 }
