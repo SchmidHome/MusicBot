@@ -106,8 +106,8 @@ export default function startTelegram() {
     })
 
     async function onAddSongCallback(user: User, data: string, message_id: number) {
+        log(user, data)
         const uri = data.substring("/queue ".length)
-        log(user, "/queue", uri)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
         if (await songPlayedRecently(uri)) {
             bot.sendMessage(user.chatId, "not again...")
@@ -122,8 +122,8 @@ export default function startTelegram() {
         }
     }
     async function onRemoveSongCallback(user: User, data: string, message_id: number) {
+        log(user, data)
         const uri = data.substring("/rem ".length)
-        log(user, "/rem", uri)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
         if (await removeFromQueue(uri)) {
             await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
@@ -180,6 +180,7 @@ export default function startTelegram() {
     })
 
     async function onPlaylistCallback(user: User, data: string, message_id: number) {
+        log(user, data)
         const name = data.substring("/playlist ".length)
         selectBackgroundPlaylist(name)
         await bot.sendMessage(user.chatId, `Selected playlist *${name}* as background playlist`, { parse_mode: "Markdown" })
@@ -209,6 +210,7 @@ export default function startTelegram() {
     // ############################################## QUEUE
     bot.onText(/\/queue/, async (msg, match) => {
         const user = getUser(msg.chat.id)
+        log(user, "/queue")
         bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
             `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
             { parse_mode: "Markdown" })
@@ -217,6 +219,7 @@ export default function startTelegram() {
     // ############################################## PLAYING
     bot.onText(/\/playing/, async (msg, match) => {
         const user = getUser(msg.chat.id)
+        log(user, "/playing")
         const currentUri = await getCurrentTrack()
         if (!currentUri) {
             bot.sendMessage(user.chatId, "No song is playing")

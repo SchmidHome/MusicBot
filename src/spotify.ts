@@ -139,6 +139,11 @@ export async function addTrackFromDefaultPlaylist() {
 
         logger.log(`Adding track from ${playlist.name}`)
         const song = await getNewTrack(playlist.songs)
+        if (song == undefined) {
+            logger.warn(`No new track found in ${playlist.name}`)
+            selectBackgroundPlaylist("Johannes Partymix")
+            return
+        }
         await addToQueue(song.spotifyUri)
     } catch (error) {
         logger.error(error);
@@ -146,21 +151,21 @@ export async function addTrackFromDefaultPlaylist() {
 }
 
 // return the next track number if song has not played recently. Make sure Playlist has more than 10 Songs!
-async function getNewTrack(playlist: Song[]): Promise<Song> {
-    const song = playlist[between(0, playlist.length)]
+async function getNewTrack(playlist: Song[]): Promise<Song | undefined> {
+    let i = between(0, playlist.length)
+    const iStart = i
 
-    if (await songPlayedRecently(song.spotifyUri)) {
-        logger.log(`${song.name} (${song.artist}) has been played recently`)
-        return getNewTrack(playlist)
-    } else {
-        logger.log(`${song.name} (${song.artist}) selected`)
-        return song
+    while (await songPlayedRecently(playlist[i].spotifyUri)) {
+        i++
+        if (i >= playlist.length) i = 0
+        if (i == iStart) return undefined
     }
+    logger.log(`${playlist[i].name} (${playlist[i].artist}) selected`)
+    return playlist[i]
 }
 
 // checks if the song was one of the last 20 songs
 export async function songPlayedRecently(uri: string) {
     const recentlyPlayed = (await getAllSongs()).slice(-20 - (await getTrackInfo()).Track)
-    // logger.log("        Song has played recently: " + (await (await recentlyPlayed).includes(uri)))
     return recentlyPlayed.includes(uri)
 }

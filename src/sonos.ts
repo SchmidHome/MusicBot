@@ -70,7 +70,7 @@ export async function getPositionInQueue(uri: string): Promise<number> {
 
 export async function getPositionInAllSongs(uri: string): Promise<number> {
     const queue = await getAllSongs()
-    return queue.indexOf(uri)
+    return queue.lastIndexOf(uri)
 }
 
 export async function getScheduledTime(uri: string): Promise<Date> {
@@ -105,29 +105,43 @@ export async function addToQueue(uri: string): Promise<boolean> {
 }
 
 export async function removeFromQueue(uri: string): Promise<boolean> {
-    try { //TODO fix this
+    try {
         logger.log(`removeFromQueue(${uri})`)
-        let pos = await getPositionInAllSongs(uri)
-        if (pos === -1) {
+        const queuePos = await getPositionInQueue(uri)
+        if (queuePos === -1) {
             logger.log("can not remove ", uri)
             return false
         }
-        logger.log("removing from queue ", uri)
+        // logger.log("removing from queue ", uri)
 
-        const UpdateID = (await (await device()).GetQueue()).UpdateID
-        logger.log("UpdateID: ", UpdateID)
+        logger.debug(await getAllSongs())
 
+
+        
         let d = await device()
+        
+        const queue = await d.GetQueue()
+        logger.debug(JSON.stringify(queue))
 
-        await d.QueueService.RemoveTrackRange({
-            QueueID: 0,
-            UpdateID: UpdateID,
-            StartingIndex: await getPositionInAllSongs(uri),
-            NumberOfTracks: 1
+        const pos = await getPositionInAllSongs(uri)
+        logger.debug("pos", pos, "uri", queue.Result[pos])
+
+        await d.AVTransportService.RemoveTrackFromQueue({
+            InstanceID: 0,
+            ObjectID: `Q:0/${pos}`,//TODO fix
+            UpdateID: 0
         })
+
+        // await d.QueueService.RemoveTrackRange({
+        //     QueueID: queue.UpdateID,
+        //     UpdateID: queue.UpdateID,
+        //     StartingIndex: pos,
+        //     NumberOfTracks: 1
+        // })
         queueCache.remove("")
         return true
     } catch (error) {
+        logger.error(error)
         console.error(error)
         return false
     }
