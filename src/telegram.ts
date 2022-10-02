@@ -125,6 +125,8 @@ export default function startTelegram() {
         log(user, data)
         const uri = data.substring("/rem ".length)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
+        //delay 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 5000))
         if (await removeFromQueue(uri)) {
             await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
             await bot.sendMessage(user.chatId, "Song removed from queue")

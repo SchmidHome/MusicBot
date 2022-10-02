@@ -112,32 +112,13 @@ export async function removeFromQueue(uri: string): Promise<boolean> {
             logger.log("can not remove ", uri)
             return false
         }
-        // logger.log("removing from queue ", uri)
-
-        logger.debug(await getAllSongs())
-
-
-        
         let d = await device()
-        
-        const queue = await d.GetQueue()
-        logger.debug(JSON.stringify(queue))
-
         const pos = await getPositionInAllSongs(uri)
-        logger.debug("pos", pos, "uri", queue.Result[pos])
-
         await d.AVTransportService.RemoveTrackFromQueue({
             InstanceID: 0,
-            ObjectID: `Q:0/${pos}`,//TODO fix
+            ObjectID: `Q:0/${pos + 1}`,
             UpdateID: 0
         })
-
-        // await d.QueueService.RemoveTrackRange({
-        //     QueueID: queue.UpdateID,
-        //     UpdateID: queue.UpdateID,
-        //     StartingIndex: pos,
-        //     NumberOfTracks: 1
-        // })
         queueCache.remove("")
         return true
     } catch (error) {
