@@ -1,6 +1,10 @@
 import chalk, { Chalk } from "chalk"
 import { Logger } from "ts-log"
 
+function padCenter(str: string, len: number) {
+    return str.padStart(str.length + Math.floor((len - str.length) / 2)).padEnd(len)
+}
+
 export class ConsoleLogger implements Logger {
     public static colors: Chalk[] = [
         // chalk.blueBright,
@@ -40,7 +44,7 @@ export class ConsoleLogger implements Logger {
 
     public log: (message?: any, ...optionalParams: any[]) => void = this.info;
     public info(message?: any, ...optionalParams: any[]): void {
-        this.append("INFO ", chalk.blue, chalk.white, message, ...optionalParams)
+        this.append(" LOG ", chalk.blue, chalk.white, message, ...optionalParams)
     }
 
     public warn(message?: any, ...optionalParams: any[]): void {
@@ -52,7 +56,8 @@ export class ConsoleLogger implements Logger {
     }
 
     private append(type: string, colorType: Chalk, colorText: Chalk, message: string, ...optionalParams: any[]) {
-        console.log(`[${colorType(type)}] [${this.color(this.name.padEnd(ConsoleLogger.maxNameLength))}] ${colorText(message)}`, ...optionalParams)
+        const time = new Date().toTimeString().split(" ")[0]
+        console.log(`[${time}] [${colorType(type)}] [${this.color(padCenter(this.name, ConsoleLogger.maxNameLength))}] ${colorText(message)}`, ...optionalParams)
     }
 }
 
