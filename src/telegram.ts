@@ -109,7 +109,8 @@ export default function startTelegram() {
         log(user, data)
         const uri = data.substring("/queue ".length)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
-        if (await songPlayedRecently(uri)) {
+
+        if (await songPlayedRecently(await uriToSong(uri))) {
             bot.sendMessage(user.chatId, "not again...")
         } else {
             logger.log(`${userToString(user)} added ${(await uriToSong(uri)).name} to queue`)

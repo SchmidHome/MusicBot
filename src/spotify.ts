@@ -155,7 +155,7 @@ async function getNewTrack(playlist: Song[]): Promise<Song | undefined> {
     let i = between(0, playlist.length)
     const iStart = i
 
-    while (await songPlayedRecently(playlist[i].spotifyUri)) {
+    while (await songPlayedRecently(playlist[i])) {
         i++
         if (i >= playlist.length) i = 0
         if (i == iStart) return undefined
@@ -164,8 +164,17 @@ async function getNewTrack(playlist: Song[]): Promise<Song | undefined> {
     return playlist[i]
 }
 
-// checks if the song was one of the last 20 songs
-export async function songPlayedRecently(uri: string) {
-    const recentlyPlayed = (await getAllSongs()).slice(-20 - (await getTrackInfo()).Track)
-    return recentlyPlayed.includes(uri)
+function similar(A: string, B: string) {
+    // true when A in B or B in A
+    return A.toLowerCase().includes(B.toLowerCase()) || B.toLowerCase().includes(A.toLowerCase())
+}
+
+// checks if the song was one of the last 100 songs
+export async function songPlayedRecently(song: Song) {
+    const recentlyPlayed = await Promise.all((await getAllSongs()).slice(-100).map(uri => uriToSong(uri)))
+    logger.debug(`recentlyPlayed: ${recentlyPlayed.length}`)
+    return recentlyPlayed.find(e =>
+        e.spotifyUri == song.spotifyUri
+        || similar(e.name, song.name) && similar(e.artist, song.artist)
+    ) != undefined
 }

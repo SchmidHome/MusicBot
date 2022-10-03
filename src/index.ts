@@ -10,7 +10,7 @@ startTelegram()
 
 async function checkQueue() {
     const queue = await getQueue()
-    if (queue.length < 2) {
+    if (queue.length < 1) {
         await addTrackFromDefaultPlaylist()
     }
 }
