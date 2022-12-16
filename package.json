@@ -2,13 +2,13 @@
   "name": "musicbot",
   "version": "0.0.1",
   "description": "",
-  "main": "src/index.ts",
+  "main": "out/index.js",
   "scripts": {
     "watch": "tsc -w",
     "build": "tsc",
     "start": "node out/index.js",
     "test": "node out/index.js test",
-    "autostart": "nodemon -L out/index.js -d 3"
+    "auto": "nodemon -L out/index.js -d 3"
   },
   "repository": {
     "type": "git",

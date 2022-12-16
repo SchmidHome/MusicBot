@@ -10,10 +10,11 @@ const logger = new ConsoleLogger("webserver")
 export default function startExpress() {
     const app = Express()
     app.use(cors());
-    app.use(morgan('dev'))
+    app.use(morgan('dev', {stream: {
+        write: (message) => logger.log(message.trim())
+    }}))
 
     app.get('/', async (req, res) => res.send("MusicBot V1"))
-
 
     app.get("/volume", async (_, res) => {
         const volume = await getVolume()

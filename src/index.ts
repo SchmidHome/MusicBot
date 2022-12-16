@@ -1,4 +1,4 @@
-import { getQueue } from "./sonos"
+import { getQueue, getVolume } from "./sonos"
 import { addTrackFromDefaultPlaylist } from "./spotify"
 import startTelegram from "./telegram"
 import startExpress from "./webserver"

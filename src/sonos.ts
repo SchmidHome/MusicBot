@@ -15,12 +15,12 @@ manager.InitializeFromDevice(SONOS_DEVICE_IP)
         manager.Devices.forEach(d => logger.log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
     })
 
-async function device(name = SONOS_DEVICE_NAME) {
+async function device(name = SONOS_DEVICE_NAME, coordinator = true) {
     const d = manager.Devices.find(d => d.Name === name)
     if (!d) {
         throw new Error(`Device ${name} not found`)
     }
-    return d.Coordinator
+    return coordinator ? d.Coordinator : d
 }
 
 // ############################################## CACHE
@@ -128,31 +128,33 @@ export async function removeFromQueue(uri: string): Promise<boolean> {
     }
 }
 
-let targetVolume: number | undefined = undefined
+// let targetVolume: number | undefined = undefined
+
+const volumeCache = new SimpleCache(10000, async (_) => {
+    logger.log("volumeCache update")
+    const d = await device()
+    return (await d.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
+})
 
 export async function getVolume(): Promise<number> {
-    if (targetVolume === undefined) {
-        logger.log("getVolume()")
-        const d = await device()
-        targetVolume = (await d.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })).CurrentVolume
-    }
-    return targetVolume
+    logger.log("getVolume()")
+    return (await volumeCache.get(""))!
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
     logger.log(`setVolume(${volume})`)
-    targetVolume = volume
-    return await applyVolume()
+    // targetVolume = volume
+    return await applyVolume(volume)
 }
 
-async function applyVolume() {
-    logger.log("applyVolume()")
-    const target = targetVolume
-    if (target === undefined) return false
+async function applyVolume(volume: number) {
+    logger.log("applyVolume(" + volume + ")")
     const d = await device()
     let members = (await d.GetZoneGroupState()).find(v => v.coordinator.name == SONOS_DEVICE_NAME)?.members
     if (!members) return false
-    return (await Promise.all(members.map(async (member) => (await device(member.name)).SetVolume(target)))).reduce((acc, v) => acc && v, true)
+    const ret = (await Promise.all(members.map(async (member) => (await device(member.name, false)).SetVolume(volume)))).reduce((acc, v) => acc && v, true)
+    volumeCache.remove("")
+    return ret
 }
 
 // async function setTouchControls() {
