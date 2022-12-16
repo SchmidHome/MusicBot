@@ -1,6 +1,6 @@
 out
 node_modules
-
+logs
 .vscode
 package-lock.json
 .env
