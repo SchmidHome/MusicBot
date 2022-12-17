@@ -1,12 +1,10 @@
 import SpotifyWebApi from 'spotify-web-api-node'
-import { PLAYLIST_FILE, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
-import { Song } from './types'
+import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
+import { Playlist, Song } from './types'
 import { assertIsNotNullOrUndefined, between } from './helper'
-import { addToQueue, getAllSongs, getTrackInfo } from './sonos'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { addToQueue, getAllSongs } from './sonos'
 import { ConsoleLogger } from './logger'
-import { JSONFileHandler, SimpleCache } from "@idot-digital/simplecache"
-
+import { db } from './mongodb'
 
 const logger = new ConsoleLogger("spotify")
 
@@ -15,89 +13,97 @@ const spotify = new SpotifyWebApi({
     clientSecret: SPOTIFY_CLIENT_SECRET,
 })
 
-// make sure data/playlists.json exists
-if (!existsSync("data")) {
-    mkdirSync("data")
-}
-if (!existsSync(PLAYLIST_FILE)) {
-    writeFileSync(PLAYLIST_FILE, JSON.stringify([{
-        name: "Johannes Partymix",
-        uri: "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=add0308425124cb6",
-        selected: true
-    }]))
-}
-const backgroundPlaylists = new JSONFileHandler(PLAYLIST_FILE, 1000)
+const backgroundPlaylists = db.collection<{
+    name: string,
+    uri: string,
+    selected: boolean
+}>('backgroundPlaylists')
 
 
-export async function getBackgroundPlaylists(): Promise<{ name: string, uri: string, selected: boolean }[]> {
-    return await backgroundPlaylists.get()
+export function getBackgroundPlaylists() {
+    return backgroundPlaylists.find({}).toArray()
 }
 
-export const playlistCache = new SimpleCache(60000, async (uri: string) => {
+const playlistCache = db.collection<Playlist & { validUntil: number }>('playlistCache')
+
+export async function getPlaylist(uri: string, name: string) {
     const id = uri.slice(34, 56)
-    // const playlist = await spotify.getPlaylist(id)
-    logger.log(`loading playlist ${id}`)
+    const playlist = await playlistCache.findOne({ id })
+    if (playlist && playlist.validUntil > Date.now()) {
+        logger.log(`cached playlist ${uri}`)
+        return playlist
+    } else {
+        logger.log(`loading playlist ${uri}`)
+        const songs: Song[] = []
+        let offset = 0
+        let result
+        do {
+            result = (await spotify.getPlaylistTracks(id, { offset })).body
+            songs.push(...await Promise.all(
+                result.items.filter(e => e.track)
+                .map(e => trackToSong(e.track!))
+            ))
+            // logger.log(`Loaded ${songs.length} songs...`)
+            offset = result.offset + result.limit
+        } while (result.next);
 
-    const songs: Song[] = []
-    let offset = 0
-    let result
-    do {
-        result = (await spotify.getPlaylistTracks(id, { offset })).body
-        songs.push(...result.items.filter(e => e.track).map(e => trackToSong(e.track!)))
-        // logger.log(`Loaded ${songs.length} songs...`)
-        offset = result.offset + result.limit
-    } while (result.next);
-
-    return (await spotify.getPlaylistTracks(id)).body
-})
-
-export async function getActiveBackgroundPlaylist(): Promise<{ songs: Song[], name: string } | undefined> {
-    let selected = (await getBackgroundPlaylists()).find(e => e.selected)
-    if (selected == undefined) { return undefined }
-    const playlist = await playlistCache.get(selected.uri)
-    assertIsNotNullOrUndefined(playlist)
-    return {
-        songs: playlist.items.filter(e => e.track).map(e => trackToSong(e.track!)),
-        name: selected.name
+        const newPlaylist = {
+            id,
+            validUntil: Date.now() + 1000 * 60,
+            songs,
+            name,
+        }
+        await playlistCache.updateOne({ id }, { $set: newPlaylist }, { upsert: true })
+        return newPlaylist
     }
 }
 
-export async function addBackgroundPlaylist(name: string, uri: string) {
-    const list = await getBackgroundPlaylists()
-    list.push({ name, uri, selected: false })
-    backgroundPlaylists.set(list)
+export async function getActiveBackgroundPlaylist(): Promise<{ id: string, songs: Song[], name: string } | undefined> {
+    let selected = await backgroundPlaylists.findOne({ selected: true })
+    if (selected == undefined) { return undefined }
+    const playlist = await getPlaylist(selected.uri, selected.name)
+    assertIsNotNullOrUndefined(playlist)
+    return playlist
+}
+
+export function addBackgroundPlaylist(name: string, uri: string) {
+    return backgroundPlaylists.insertOne({
+        name, uri, selected: false
+    })
 }
 
 export async function selectBackgroundPlaylist(name: string) {
-    const list = await getBackgroundPlaylists()
-    list.forEach(e => e.selected = e.name == name)
-    backgroundPlaylists.set(list)
+    await backgroundPlaylists.updateMany({}, { $set: { selected: false } })
+    await backgroundPlaylists.updateOne({ name }, { $set: { selected: true } })
 }
 
 // ############################################## CONVERT/FIND
-const cashedSongs: { [uri: string]: Song } = {}
+
+const songCache = db.collection<Song & { validUntil: number }>('songCache')
 
 let allowedRequests = 0
 setInterval(() => {
     allowedRequests = 10
 }, 2000)
 export async function uriToSong(uri: string): Promise<Song> {
-    if (!cashedSongs[uri]) {
+    const cachedSong = await songCache.findOne({ spotifyUri: uri })
+
+    if (cachedSong && cachedSong.validUntil > Date.now()) {
+        return cachedSong
+    } else {
         while (allowedRequests <= 0) {
             await new Promise(resolve => setTimeout(resolve, 1000))
         }
-        if (!cashedSongs[uri]) {
-            allowedRequests--
-            const id = uri.slice(-22)
-            logger.log("        get songs", id)
-            const track = await spotify.getTrack(id)
-            trackToSong(track.body)
-        }
+        allowedRequests--
+        const id = uri.slice(-22)
+        logger.log("        get songs", id)
+        const track = await spotify.getTrack(id)
+        const song = await trackToSong(track.body)
+        return song
     }
-    return cashedSongs[uri];
 }
 
-function trackToSong(track: SpotifyApi.TrackObjectFull): Song {
+async function trackToSong(track: SpotifyApi.TrackObjectFull) {
     const song = {
         name: track.name,
         artist: track.artists.map(a => a.name).join(", "),
@@ -106,7 +112,7 @@ function trackToSong(track: SpotifyApi.TrackObjectFull): Song {
         spotifyUri: track.uri,
         duration: track.duration_ms,
     }
-    cashedSongs[track.uri] = song
+    await songCache.updateOne({ spotifyUri: track.uri }, { $set: { ...song, validUntil: Date.now() + 1000 * 60 * 60 * 24 * 7 } }, { upsert: true })
     return song
 }
 

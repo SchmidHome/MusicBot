@@ -23,3 +23,9 @@ export interface Song {
     spotifyUri: string
     duration: number
 }
+
+export interface Playlist {
+    id: string
+    name: string
+    songs: Song[]
+}

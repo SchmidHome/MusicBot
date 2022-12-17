@@ -5,3 +5,4 @@ logs
 package-lock.json
 .env
 data
+yarn-error.log

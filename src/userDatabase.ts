@@ -1,54 +1,24 @@
 import { User, UserState } from "./types"
-import { JSONFileHandler } from "@idot-digital/simplecache"
-import { existsSync, mkdirSync, writeFileSync } from "fs"
-import { USER_FILE } from "./config"
+import { db } from "./mongodb"
 
-// make sure data/users.json exists
-if (!existsSync("data")) {
-    mkdirSync("data")
-}
-if (!existsSync(USER_FILE)) {
-    writeFileSync(USER_FILE, "[]")
-}
+const users = db.collection<User>('users')
 
-const file = new JSONFileHandler(USER_FILE, 1000)
-
-const userStates: { [id: number]: User | undefined } = {}
-
-async function loadUsers() {
-    const users: User[] = await file.get()
-    users.forEach(u => userStates[u.chatId] = u)
-}
-
-function saveUsers() {
-    return file.set(Object.values(userStates))
-}
-
-loadUsers()
-
-
-
-export function getUser(chatID: number): User {
-    if (!userStates[chatID]) {
-        userStates[chatID] = {
-            state: UserState.unknown,
-            chatId: chatID,
-        }
+export async function getUser(chatId: number): Promise<User> {
+    const user = await users.findOne({ chatId })
+    if (!user) {
+        await users.insertOne({ chatId, state: UserState.unknown })
+        return { chatId, state: UserState.unknown }
+    } else {
+        return user
     }
-    return userStates[chatID]!
 }
 
-export function setUser(chatID: number, name: string, state: UserState): void {
-    userStates[chatID] = {
-        name,
-        state,
-        chatId: chatID,
-    }
-    saveUsers()
+export async function setUser(chatId: number, name: string, state: UserState) {
+    users.updateOne({ chatId }, { $set: { name, state } }, { upsert: true })
 }
 
-export function setUserState(chatID: number, state: UserState): void {
-    getUser(chatID)!.state = state
+export function setUserState(chatId: number, state: UserState): void {
+    users.updateOne({ chatId }, { $set: { state } })
 }
 
 export function userToString(user: User): string {

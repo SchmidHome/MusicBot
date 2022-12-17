@@ -5,7 +5,7 @@ import { TELEGRAM_TOKEN } from "./config"
 import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 import { ConsoleLogger } from './logger'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
-import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, playlistCache, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist } from './spotify'
+import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist, getPlaylist } from './spotify'
 import { User, UserState } from "./types"
 import { getUser, setUser, userToString } from "./userDatabase"
 
@@ -24,7 +24,7 @@ export default function startTelegram() {
 
     // ############################################## START
     bot.onText(/^\/start *$/, async (msg) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         log(user, "/start")
         if (isRegistered(user)) {
             bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
@@ -35,7 +35,7 @@ export default function startTelegram() {
     })
 
     bot.onText(/^\/start (\S+) *$/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         assertIsMatch(match)
         log(user, "/start", match[1])
 
@@ -45,13 +45,13 @@ export default function startTelegram() {
             const username = match[1]
             setUser(user.chatId, username, UserState.user)
             await bot.sendMessage(user.chatId, `Welcome ${username}!`)
-            logger.log(`${userToString(getUser(user.chatId))} registered`)
+            logger.log(`${userToString(await getUser(user.chatId))} registered`)
         }
     })
 
     // ############################################## SEARCH TRACK
     async function searchTrackMessage(msg: Message) {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         assertIsRegistered(user)
 
         if (!msg.text) {
@@ -72,7 +72,7 @@ export default function startTelegram() {
 
     bot.on("callback_query", async (query) => {
         assertIsNotUndefined(query.message)
-        const user = getUser(query.message.chat.id)
+        const user = await getUser(query.message.chat.id)
         assertIsRegistered(user)
         assertIsNotUndefined(query.data)
         await bot.answerCallbackQuery(query.id)
@@ -89,10 +89,10 @@ export default function startTelegram() {
     })
 
     // ############################################## SEARCH/ADD/REMOVE SONG
-    bot.on('message', (msg) => {
+    bot.on('message', async (msg) => {
         assertIsNotUndefined(msg.text)
         if (msg.text.startsWith('/')) return
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         assertIsRegistered(user)
         log(user, "messsage", msg.text)
 
@@ -139,7 +139,7 @@ export default function startTelegram() {
     // ############################################## GET/SET DEFAULT PLAYLIST
 
     bot.onText(/^\/playlist *$/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         assertIsRegistered(user)
         log(user, "/playlist")
         // show current playlist and add buttons for each playlist
@@ -163,7 +163,7 @@ export default function startTelegram() {
     })
 
     bot.onText(/^\/playlist (https:\/\/open\.spotify\.com\/playlist\/\S*) (.*)$/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         assertIsRegistered(user)
         assertIsMatch(match)
         log(user, "/playlist", match[1] + match[2])
@@ -172,7 +172,7 @@ export default function startTelegram() {
             const uri = match[1]
             const name = match[2]
 
-            const playlist = await playlistCache.get(uri)
+            const playlist = await getPlaylist(uri, name)
             assertIsNotNull(playlist)
             await addBackgroundPlaylist(name, uri)
             await selectBackgroundPlaylist(name)
@@ -190,8 +190,8 @@ export default function startTelegram() {
     }
 
     // ############################################## STATE
-    bot.onText(/\/state/, (msg, match) => {
-        const user = getUser(msg.chat.id)
+    bot.onText(/\/state/, async (msg, match) => {
+        const user = await getUser(msg.chat.id)
         assertIsMatch(match)
 
         switch (user.state) {
@@ -212,7 +212,7 @@ export default function startTelegram() {
 
     // ############################################## QUEUE
     bot.onText(/\/queue/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         log(user, "/queue")
         bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
             `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
@@ -221,7 +221,7 @@ export default function startTelegram() {
 
     // ############################################## PLAYING
     bot.onText(/\/playing/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         log(user, "/playing")
         const currentUri = await getCurrentTrack()
         if (!currentUri) {
@@ -255,7 +255,7 @@ export default function startTelegram() {
     }
 
     bot.onText(/\/volume/, async (msg, match) => {
-        const user = getUser(msg.chat.id)
+        const user = await getUser(msg.chat.id)
         const volume = roundNearest5(await getVolume())
         sendVolumeMessage(user, volume)
     })

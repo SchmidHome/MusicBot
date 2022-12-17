@@ -8,19 +8,40 @@ import { SONOS_DEVICE_IP, SONOS_DEVICE_NAME } from "./config"
 
 const logger = new ConsoleLogger("sonos")
 
-
 const manager = new SonosManager()
 manager.InitializeFromDevice(SONOS_DEVICE_IP)
     .then(() => {
         manager.Devices.forEach(d => logger.log('Device %s (%s) is joined in %s', d.Name, d.Host, d.GroupName))
     })
 
-async function device(name = SONOS_DEVICE_NAME, coordinator = true) {
-    const d = manager.Devices.find(d => d.Name === name)
-    if (!d) {
-        throw new Error(`Device ${name} not found`)
+async function getDevices() {
+    // try manager.Devices 5 times with 1 second delay
+    for (let i = 0; i < 5; i++) {
+        try {
+            return manager.Devices;
+        }
+        catch (error) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
-    return coordinator ? d.Coordinator : d
+    throw new Error("Could not get devices");
+}
+
+async function device(name = SONOS_DEVICE_NAME, coordinator = true) {
+    const d = (await getDevices()).find(d => d.Name === name);
+    for (let i = 0; i < 5; i++) {
+        try {
+            const d = manager.Devices.find(d => d.Name === name);
+            if (d)
+                return coordinator ? d.Coordinator : d;
+        } catch (error) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    if (!d) {
+        throw new Error(`Device ${name} not found`);
+    }
+    return coordinator ? d.Coordinator : d;
 }
 
 // ############################################## CACHE
