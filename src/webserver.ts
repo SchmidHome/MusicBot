@@ -48,7 +48,7 @@ export default function startExpress() {
             artist: song.artist,
             coverURL: song.imageUri,
             songDurationMs: song.duration,
-            endDate: await getScheduledTime(song.spotifyUri),
+            endDate: await getScheduledTime(song.spotifyUri), //todo send correct end date
             dj: await getDj(song.spotifyUri) || "",
         }
         const positionInTrack = timeStringToSeconds((await getTrackInfo()).RelTime)

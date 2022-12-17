@@ -46,8 +46,8 @@ async function device(name = SONOS_DEVICE_NAME, coordinator = true) {
 
 // ############################################## CACHE
 
-const trackinfoCache = new SimpleCache(1000, async (_) => await (await device()).AVTransportService.GetPositionInfo())
-const queueCache = new SimpleCache(10000, async (_) => {
+const trackinfoCache = new SimpleCache(900, async (_) => await (await device()).AVTransportService.GetPositionInfo())
+const queueCache = new SimpleCache(9000, async (_) => {
     let _queue = (await (await device()).GetQueue()).Result
     if (typeof _queue === "string") return []
     return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
