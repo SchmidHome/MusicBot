@@ -7,8 +7,8 @@
     "watch": "tsc -w",
     "build": "tsc",
     "start": "node out/index.js",
-    "test": "node out/index.js test",
     "auto": "nodemon -L out/index.js -d 3",
+    "serve": "tsc && node out/index.js",
     "compose": "docker compose up -d"
   },
   "repository": {
