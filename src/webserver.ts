@@ -4,6 +4,7 @@ import { getCurrentTrack, getQueue, getScheduledTime, getTrackInfo, getVolume, t
 import { uriToSong } from './spotify';
 import morgan from 'morgan';
 import { ConsoleLogger } from './logger';
+import { getDj } from './telegram';
 
 const logger = new ConsoleLogger("webserver")
 
@@ -31,7 +32,7 @@ export default function startExpress() {
                     artist: song.artist,
                     coverURL: song.imageUri,
                     playingTime: await getScheduledTime(uri),
-                    dj: "TODO" //TODO
+                    dj: await getDj(uri) || "?"
                 }
             }));
         res.json(queue);
@@ -45,7 +46,7 @@ export default function startExpress() {
             name: song.name,
             artist: song.artist,
             coverURL: song.imageUri,
-            dj: "TODO", //TODO
+            dj: await getDj(song.spotifyUri) || "?",
             playingTime: await getScheduledTime(currentTrackURI)
         }
         const positionInTrack = timeStringToSeconds((await getTrackInfo()).RelTime)

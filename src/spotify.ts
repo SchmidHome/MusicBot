@@ -2,9 +2,10 @@ import SpotifyWebApi from 'spotify-web-api-node'
 import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
 import { Playlist, Song } from './types'
 import { assertIsNotNullOrUndefined, between } from './helper'
-import { addToQueue, getAllSongs } from './sonos'
+import { addToQueue, getAllSongs, getScheduledTime } from './sonos'
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
+import { removeDj, setDj } from './telegram'
 
 const logger = new ConsoleLogger("spotify")
 
@@ -41,7 +42,7 @@ export async function getPlaylist(uri: string, name: string) {
             result = (await spotify.getPlaylistTracks(id, { offset })).body
             songs.push(...await Promise.all(
                 result.items.filter(e => e.track)
-                .map(e => trackToSong(e.track!))
+                    .map(e => trackToSong(e.track!))
             ))
             // logger.log(`Loaded ${songs.length} songs...`)
             offset = result.offset + result.limit
@@ -151,6 +152,11 @@ export async function addTrackFromDefaultPlaylist() {
             return
         }
         await addToQueue(song.spotifyUri)
+
+        const songTime = await getScheduledTime(song.spotifyUri)
+
+        await setDj(song.spotifyUri, playlist.name, songTime)
+    
     } catch (error) {
         logger.error(error);
     }

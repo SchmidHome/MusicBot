@@ -1,9 +1,10 @@
 import { assert } from 'console'
-import TelegramBot, { CallbackQuery, Message } from 'node-telegram-bot-api'
+import TelegramBot, { Message } from 'node-telegram-bot-api'
 import { TELEGRAM_TOKEN } from "./config"
 
 import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 import { ConsoleLogger } from './logger'
+import { db } from './mongodb'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
 import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist, getPlaylist } from './spotify'
 import { User, UserState } from "./types"
@@ -16,6 +17,23 @@ function log(user: User, command: string, message?: string) {
 }
 
 export const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true })
+
+const djCache = db.collection<{ spotifyUri: string, name: string, validUntil: number }>("djCache")
+export async function getDj(spotifyUri: string) {
+    const dj = await djCache.findOne({ spotifyUri })
+    if (dj && dj.validUntil > Date.now()) {
+        return dj.name
+    } else {
+        return undefined
+    }
+}
+export async function setDj(spotifyUri: string, name: string, playTime: Date) {
+    await djCache.updateOne({ spotifyUri }, { $set: { spotifyUri, name, validUntil: playTime.getTime() + 30 * 60 * 1000 } }, { upsert: true })
+}
+export async function removeDj(spotifyUri: string) {
+    await djCache.deleteOne({ spotifyUri })
+}
+
 
 export default function startTelegram() {
     bot.on("error", (err) => {
@@ -107,16 +125,29 @@ export default function startTelegram() {
 
     async function onAddSongCallback(user: User, data: string, message_id: number) {
         log(user, data)
+
+        assertIsRegistered(user)
+
         const uri = data.substring("/queue ".length)
         await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
 
-        if (await songPlayedRecently(await uriToSong(uri))) {
+        const song = await uriToSong(uri)
+
+        if (await songPlayedRecently(song)) {
             bot.sendMessage(user.chatId, "not again...")
         } else {
-            logger.log(`${userToString(user)} added ${(await uriToSong(uri)).name} to queue`)
+            logger.log(`${userToString(user)} added ${song.name} to queue`)
             if (await addToQueue(uri)) {
+                const songPos = (await getPositionInQueue(uri))
+                const songTime = await getScheduledTime(uri)
+
                 await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
-                await bot.sendMessage(user.chatId, `Song added to queue (position ${(await getPositionInQueue(uri)) + 1})\nplaying at ${(await getScheduledTime(uri)).toLocaleTimeString()}`)
+
+                await bot.sendMessage(user.chatId, `Song added to queue (position ${songPos + 1})\nplaying at ${songTime.toLocaleTimeString()}`)
+
+                // add dj to cache
+                await setDj(song.spotifyUri, user.name, songTime)
+
             } else {
                 await bot.sendMessage(user.chatId, "Could not add song to queue")
             }
@@ -131,6 +162,10 @@ export default function startTelegram() {
         if (await removeFromQueue(uri)) {
             await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
             await bot.sendMessage(user.chatId, "Song removed from queue")
+
+            // remove dj from cache
+            await removeDj(uri)
+
         } else {
             await bot.sendMessage(user.chatId, "Could not remove song from queue")
         }
