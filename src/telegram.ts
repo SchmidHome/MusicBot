@@ -40,28 +40,36 @@ export default function startTelegram() {
 
     // ############################################## START
     bot.onText(/^\/start *$/, async (msg) => {
-        const user = await getUser(msg.chat.id)
-        log(user, "/start")
-        if (isRegistered(user)) {
-            bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
-        } else {
-            await bot.sendMessage(user.chatId, "Welcome to the bot!")
-            await bot.sendMessage(user.chatId, "Please type /start <your_name>")
+        try {
+            const user = await getUser(msg.chat.id)
+            log(user, "/start")
+            if (isRegistered(user)) {
+                bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
+            } else {
+                await bot.sendMessage(user.chatId, "Welcome to the bot!")
+                await bot.sendMessage(user.chatId, "Please type /start <your_name>")
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
     bot.onText(/^\/start (\S+) *$/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        assertIsMatch(match)
-        log(user, "/start", match[1])
+        try {
+            const user = await getUser(msg.chat.id)
+            assertIsMatch(match)
+            log(user, "/start", match[1])
 
-        if (isRegistered(user)) {
-            bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
-        } else {
-            const username = match[1]
-            setUser(user.chatId, username, UserState.user)
-            await bot.sendMessage(user.chatId, `Welcome ${username}!`)
-            logger.log(`${userToString(await getUser(user.chatId))} registered`)
+            if (isRegistered(user)) {
+                bot.sendMessage(user.chatId, "You are already registered, " + user.name + "!")
+            } else {
+                const username = match[1]
+                setUser(user.chatId, username, UserState.user)
+                await bot.sendMessage(user.chatId, `Welcome ${username}!`)
+                logger.log(`${userToString(await getUser(user.chatId))} registered`)
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
@@ -87,37 +95,45 @@ export default function startTelegram() {
     }
 
     bot.on("callback_query", async (query) => {
-        assertIsNotUndefined(query.message)
-        const user = await getUser(query.message.chat.id)
-        assertIsRegistered(user)
-        assertIsNotUndefined(query.data)
-        await bot.answerCallbackQuery(query.id)
+        try {
+            assertIsNotUndefined(query.message)
+            const user = await getUser(query.message.chat.id)
+            assertIsRegistered(user)
+            assertIsNotUndefined(query.data)
+            await bot.answerCallbackQuery(query.id)
 
-        if (query.data.startsWith("/queue ")) {
-            await onAddSongCallback(user, query.data, query.message!.message_id)
-        } else if (query.data.startsWith("/rem ")) {
-            await onRemoveSongCallback(user, query.data, query.message!.message_id)
-        } else if (query.data.startsWith("/volume ")) {
-            await onVolumeCallback(user, query.data, query.message!.message_id)
-        } else if (query.data.startsWith("/playlist ")) {
-            await onPlaylistCallback(user, query.data, query.message!.message_id)
+            if (query.data.startsWith("/queue ")) {
+                await onAddSongCallback(user, query.data, query.message!.message_id)
+            } else if (query.data.startsWith("/rem ")) {
+                await onRemoveSongCallback(user, query.data, query.message!.message_id)
+            } else if (query.data.startsWith("/volume ")) {
+                await onVolumeCallback(user, query.data, query.message!.message_id)
+            } else if (query.data.startsWith("/playlist ")) {
+                await onPlaylistCallback(user, query.data, query.message!.message_id)
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
     // ############################################## SEARCH/ADD/REMOVE SONG
     bot.on('message', async (msg) => {
-        assertIsNotUndefined(msg.text)
-        if (msg.text.startsWith('/')) return
-        const user = await getUser(msg.chat.id)
-        assertIsRegistered(user)
-        log(user, "messsage", msg.text)
+        try {
+            assertIsNotUndefined(msg.text)
+            if (msg.text.startsWith('/')) return
+            const user = await getUser(msg.chat.id)
+            assertIsRegistered(user)
+            log(user, "messsage", msg.text)
 
-        logger.log("message: " + msg.text + ", " + userToString(user))
-        switch (user.state) {
-            case UserState.dj:
-            case UserState.admin:
-                searchTrackMessage(msg)
-                break
+            logger.log("message: " + msg.text + ", " + userToString(user))
+            switch (user.state) {
+                case UserState.dj:
+                case UserState.admin:
+                    searchTrackMessage(msg)
+                    break
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
@@ -172,46 +188,54 @@ export default function startTelegram() {
     // ############################################## GET/SET DEFAULT PLAYLIST
 
     bot.onText(/^\/playlist *$/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        assertIsRegistered(user)
-        log(user, "/playlist")
-        // show current playlist and add buttons for each playlist
-        const playlists = await getBackgroundPlaylists()
-        const buttons = playlists.map((playlist) => {
-            return { "text": playlist.name, "callback_data": "/playlist " + playlist.name }
-        })
-        let msgText = `Current playlist:\n*${(await getActiveBackgroundPlaylist())?.name}*`
-        let msgSent = await bot.sendMessage(user.chatId, msgText, {
-            parse_mode: "Markdown", reply_markup: {
-                "inline_keyboard": user.state == UserState.admin ? buttons.map(v => [v]) : [[]]
-            }
-        })
+        try {
+            const user = await getUser(msg.chat.id)
+            assertIsRegistered(user)
+            log(user, "/playlist")
+            // show current playlist and add buttons for each playlist
+            const playlists = await getBackgroundPlaylists()
+            const buttons = playlists.map((playlist) => {
+                return { "text": playlist.name, "callback_data": "/playlist " + playlist.name }
+            })
+            let msgText = `Current playlist:\n*${(await getActiveBackgroundPlaylist())?.name}*`
+            let msgSent = await bot.sendMessage(user.chatId, msgText, {
+                parse_mode: "Markdown", reply_markup: {
+                    "inline_keyboard": user.state == UserState.admin ? buttons.map(v => [v]) : [[]]
+                }
+            })
 
-        // set timeout to delete buttons
-        setTimeout(async () => {
-            try {
-                await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msgSent.message_id })
-            } catch (error) { }
-        }, 10000)
+            // set timeout to delete buttons
+            setTimeout(async () => {
+                try {
+                    await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id: msgSent.message_id })
+                } catch (error) { }
+            }, 10000)
+        } catch (error) {
+            console.error(error)
+        }
     })
 
     bot.onText(/^\/playlist (https:\/\/open\.spotify\.com\/playlist\/\S*) (.*)$/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        assertIsRegistered(user)
-        assertIsMatch(match)
-        log(user, "/playlist", match[1] + match[2])
-
         try {
-            const uri = match[1]
-            const name = match[2]
+            const user = await getUser(msg.chat.id)
+            assertIsRegistered(user)
+            assertIsMatch(match)
+            log(user, "/playlist", match[1] + match[2])
 
-            const playlist = await getPlaylist(uri, name)
-            assertIsNotNull(playlist)
-            await addBackgroundPlaylist(name, uri)
-            await selectBackgroundPlaylist(name)
-            await bot.sendMessage(user.chatId, `Added playlist ${name} to background playlists`)
+            try {
+                const uri = match[1]
+                const name = match[2]
+
+                const playlist = await getPlaylist(uri, name)
+                assertIsNotNull(playlist)
+                await addBackgroundPlaylist(name, uri)
+                await selectBackgroundPlaylist(name)
+                await bot.sendMessage(user.chatId, `Added playlist ${name} to background playlists`)
+            } catch (error) {
+                await bot.sendMessage(user.chatId, "Could not add playlist")
+            }
         } catch (error) {
-            await bot.sendMessage(user.chatId, "Could not add playlist")
+            console.error(error)
         }
     })
 
@@ -224,44 +248,56 @@ export default function startTelegram() {
 
     // ############################################## STATE
     bot.onText(/\/state/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        assertIsMatch(match)
+        try {
+            const user = await getUser(msg.chat.id)
+            assertIsMatch(match)
 
-        switch (user.state) {
-            case UserState.unknown:
-                bot.sendMessage(user.chatId, "You are not registered!")
-                break
-            case UserState.user:
-                bot.sendMessage(user.chatId, "You are a user!")
-                break
-            case UserState.dj:
-                bot.sendMessage(user.chatId, "You are a dj!")
-                break
-            case UserState.admin:
-                bot.sendMessage(user.chatId, "You are an admin!")
-                break
+            switch (user.state) {
+                case UserState.unknown:
+                    bot.sendMessage(user.chatId, "You are not registered!")
+                    break
+                case UserState.user:
+                    bot.sendMessage(user.chatId, "You are a user!")
+                    break
+                case UserState.dj:
+                    bot.sendMessage(user.chatId, "You are a dj!")
+                    break
+                case UserState.admin:
+                    bot.sendMessage(user.chatId, "You are an admin!")
+                    break
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
     // ############################################## QUEUE
     bot.onText(/\/queue/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        log(user, "/queue")
-        bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
-            `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
-            { parse_mode: "Markdown" })
+        try {
+            const user = await getUser(msg.chat.id)
+            log(user, "/queue")
+            bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
+                `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
+                { parse_mode: "Markdown" })
+        } catch (error) {
+            console.error(error)
+        }
     })
 
     // ############################################## PLAYING
     bot.onText(/\/playing/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        log(user, "/playing")
-        const currentUri = await getCurrentTrack()
-        if (!currentUri) {
-            bot.sendMessage(user.chatId, "No song is playing")
-        } else {
-            const currentSong = (await uriToSong(currentUri))
-            bot.sendMessage(user.chatId, "Currently playing:\n" + currentSong.name + " by " + currentSong.artist)
+        try {
+            const user = await getUser(msg.chat.id)
+            log(user, "/playing")
+            const currentUri = await getCurrentTrack()
+            if (!currentUri) {
+                bot.sendMessage(user.chatId, "No song is playing")
+            } else {
+                const currentSong = (await uriToSong(currentUri))
+                bot.sendMessage(user.chatId, "Currently playing:\n" + currentSong.name + " by " + currentSong.artist)
+            }
+        } catch (error) {
+            console.error(error)
         }
     })
 
@@ -288,9 +324,15 @@ export default function startTelegram() {
     }
 
     bot.onText(/\/volume/, async (msg, match) => {
-        const user = await getUser(msg.chat.id)
-        const volume = roundNearest5(await getVolume())
-        sendVolumeMessage(user, volume)
+        try {
+            const user = await getUser(msg.chat.id)
+            assertIsRegistered(user)
+
+            const volume = roundNearest5(await getVolume())
+            sendVolumeMessage(user, volume)
+        } catch (error) {
+            console.error(error)
+        }
     })
     async function onVolumeCallback(user: User, data: string, message_id: number) {
         log(user, "/volume", data)
