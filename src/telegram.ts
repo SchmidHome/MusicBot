@@ -329,6 +329,7 @@ export default function startTelegram() {
         try {
             const user = await getUser(msg.chat.id)
             assertIsRegistered(user)
+            assertIsDj(user)
 
             const volume = roundNearest5(await getVolume())
             sendVolumeMessage(user, volume)
