@@ -32,7 +32,7 @@ export async function removeDj(spotifyUri: string) {
 }
 
 
-import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
+import { assertIsAdmin, assertIsDj, assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 export default function startTelegram() {
     bot.on("error", (err) => {
         console.error("Error: ", err)
@@ -103,12 +103,16 @@ export default function startTelegram() {
             await bot.answerCallbackQuery(query.id)
 
             if (query.data.startsWith("/queue ")) {
+                assertIsDj(user)
                 await onAddSongCallback(user, query.data, query.message!.message_id)
             } else if (query.data.startsWith("/rem ")) {
+                assertIsDj(user)
                 await onRemoveSongCallback(user, query.data, query.message!.message_id)
             } else if (query.data.startsWith("/volume ")) {
+                assertIsDj(user)
                 await onVolumeCallback(user, query.data, query.message!.message_id)
             } else if (query.data.startsWith("/playlist ")) {
+                assertIsAdmin(user)
                 await onPlaylistCallback(user, query.data, query.message!.message_id)
             }
         } catch (error) {
@@ -123,15 +127,11 @@ export default function startTelegram() {
             if (msg.text.startsWith('/')) return
             const user = await getUser(msg.chat.id)
             assertIsRegistered(user)
+            assertIsDj(user)
             log(user, "messsage", msg.text)
 
             logger.log("message: " + msg.text + ", " + userToString(user))
-            switch (user.state) {
-                case UserState.dj:
-                case UserState.admin:
-                    searchTrackMessage(msg)
-                    break
-            }
+            searchTrackMessage(msg)
         } catch (error) {
             console.error(error)
         }
@@ -191,6 +191,7 @@ export default function startTelegram() {
         try {
             const user = await getUser(msg.chat.id)
             assertIsRegistered(user)
+            assertIsDj(user)
             log(user, "/playlist")
             // show current playlist and add buttons for each playlist
             const playlists = await getBackgroundPlaylists()
@@ -219,6 +220,7 @@ export default function startTelegram() {
         try {
             const user = await getUser(msg.chat.id)
             assertIsRegistered(user)
+            assertIsAdmin(user)
             assertIsMatch(match)
             log(user, "/playlist", match[1] + match[2])
 
