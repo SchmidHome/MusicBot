@@ -117,8 +117,8 @@ async function trackToSong(track: SpotifyApi.TrackObjectFull) {
     return song
 }
 
-export async function querySong(song: string): Promise<Song | undefined> {
-    const tracks = (await spotify.searchTracks(song)).body.tracks?.items || []
+export async function querySong(song: string, offset: number): Promise<Song | undefined> {
+    const tracks = (await spotify.searchTracks(song, {limit: 1, offset})).body.tracks?.items || []
 
     if (tracks.length === 0)
         return undefined

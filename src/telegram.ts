@@ -4,7 +4,7 @@ import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
 import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist, getPlaylist } from './spotify'
-import { User, UserState } from "./types"
+import { RegisteredUser, User, UserState } from "./types"
 import { getUser, setUser, userToString } from "./userDatabase"
 
 const logger = new ConsoleLogger("telegram")
@@ -74,21 +74,19 @@ export default function startTelegram() {
     })
 
     // ############################################## SEARCH TRACK
-    async function searchTrackMessage(msg: Message) {
-        const user = await getUser(msg.chat.id)
-        assertIsRegistered(user)
+    async function searchTrackMessage(str: string, user: RegisteredUser, offset = 0) {
 
-        if (!msg.text) {
+        if (!str) {
             bot.sendMessage(user.chatId, "Please type a song name")
         } else {
-            const song = await querySong(msg.text)
+            const song = await querySong(str, offset)
             if (!song) {
                 bot.sendMessage(user.chatId, "No song found")
             } else {
                 let msg = `*${song.name}*\n${song.artist}\n${song.imageUri}`
                 bot.sendMessage(user.chatId, msg, {
                     parse_mode: "Markdown", reply_markup:
-                        { "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + song.spotifyUri }]] }
+                        replyMarkup_AddToQueue_Next_Previous(song.spotifyUri, str, offset)
                 })
             }
         }
@@ -114,6 +112,9 @@ export default function startTelegram() {
             } else if (query.data.startsWith("/playlist ")) {
                 assertIsAdmin(user)
                 await onPlaylistCallback(user, query.data, query.message!.message_id)
+            } else if (query.data.startsWith("/find ")) {
+                assertIsDj(user)
+                await onFindSongCallback(user, query.data, query.message!.message_id)
             }
         } catch (error) {
             console.error(error)
@@ -131,11 +132,48 @@ export default function startTelegram() {
             log(user, "messsage", msg.text)
 
             logger.log("message: " + msg.text + ", " + userToString(user))
-            searchTrackMessage(msg)
+            searchTrackMessage(msg.text, user, 0)
         } catch (error) {
             console.error(error)
         }
     })
+
+    function replyMarkup_RemoveFromQueue(uri: string) {
+        return {
+            "inline_keyboard": [
+                [{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]]
+        }
+    }
+
+    function replyMarkup_AddToQueue_Next_Previous(uri: string, str: string, position: number) {
+        let ret = {
+            "inline_keyboard": [
+                [{ "text": "Add to Queue", "callback_data": "/queue " + uri }],
+                [{ "text": "Next", "callback_data": "/find " + str + " " + (position + 1) }],
+            ]
+        }
+        if (position > 0) {
+            ret.inline_keyboard[1].unshift({ "text": "Previous", "callback_data": "/find " + str + " " + (position - 1) })
+        }
+        return ret
+    }
+
+    function replyMarkup_Clear() {
+        return {
+            "inline_keyboard": []
+        }
+    }
+
+    async function onFindSongCallback(user: User, data: string, message_id: number) {
+        log(user, data)
+        assertIsRegistered(user)
+        assertIsDj(user)
+
+        const str = data.substring("/find ".length)
+        const [search, offset] = str.split(" ")
+
+        searchTrackMessage(search, user, Number(offset))
+    }
 
     async function onAddSongCallback(user: User, data: string, message_id: number) {
         log(user, data)
@@ -143,7 +181,7 @@ export default function startTelegram() {
         assertIsRegistered(user)
 
         const uri = data.substring("/queue ".length)
-        await bot.editMessageReplyMarkup({ "inline_keyboard": [] }, { chat_id: user.chatId, message_id })
+        await bot.editMessageReplyMarkup(replyMarkup_Clear(), { chat_id: user.chatId, message_id })
 
         const song = await uriToSong(uri)
 
@@ -155,7 +193,7 @@ export default function startTelegram() {
                 const songPos = (await getPositionInQueue(uri))
                 const songTime = await getScheduledTime(uri)
 
-                await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Remove from Queue", "callback_data": "/rem " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
+                await bot.editMessageReplyMarkup(replyMarkup_RemoveFromQueue(uri), { chat_id: user.chatId, message_id: message_id })
 
                 await bot.sendMessage(user.chatId, `Song added to queue (position ${songPos + 1})\nplaying at ${songTime.toLocaleTimeString()}`)
 
@@ -174,7 +212,7 @@ export default function startTelegram() {
         //delay 5 seconds
         await new Promise(resolve => setTimeout(resolve, 5000))
         if (await removeFromQueue(uri)) {
-            await bot.editMessageReplyMarkup({ "inline_keyboard": [[{ "text": "Add to Queue", "callback_data": "/queue " + uri }]] }, { chat_id: user.chatId, message_id: message_id })
+            await bot.editMessageReplyMarkup(replyMarkup_Clear(), { chat_id: user.chatId, message_id: message_id })
             await bot.sendMessage(user.chatId, "Song removed from queue")
 
             // remove dj from cache

@@ -8,27 +8,28 @@ console.clear()
 startExpress()
 startTelegram()
 
+let c = 0
 async function checkQueue() {
     const playing = await getCurrentTrack()
     if (playing) {
         if (await getPositionInAllSongs(playing) === 0) {
             if (!await getPlayingState()) {
-                console.log("Playlist ran out, add new track and continue")
+                c++
+                if (c > 1) {
+                    console.log("Playlist ran out, add new track and continue")
 
-                const oldQueue = await getAllSongs()
-
-                await addTrackFromDefaultPlaylist()
-
-                await new Promise(resolve => setTimeout(resolve, 5 * 1000))
-                // continue
-                await playSong(oldQueue.length)
-
-            }
-        }
-    }
+                    const oldQueue = await getAllSongs()
+                    await addTrackFromDefaultPlaylist()
+                    await new Promise(resolve => setTimeout(resolve, 5 * 1000))
+                    // continue
+                    await playSong(oldQueue.length)
+                }
+            } else c = 0
+        } else c = 0
+    } else c = 0
 
     const queue = await getQueue()
-    if (queue.length < 1) {
+    if (queue.length < 2) {
         await addTrackFromDefaultPlaylist()
     }
 }
