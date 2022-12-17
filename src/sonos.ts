@@ -76,6 +76,13 @@ export async function getCurrentTrack(): Promise<string | undefined> {
     return sonosToSpotifyUri((await getTrackInfo()).TrackURI)
 }
 
+export async function getPlayingState(): Promise<boolean> {
+    logger.log("getPlayingState()")
+    const state = await (await device()).AVTransportService.GetTransportInfo()
+    logger.debug(state)
+    return state.CurrentTransportState === "PLAYING"
+}
+
 export async function getQueue(): Promise<string[]> {
     let _queue = await getAllSongs()
     const posInfo = await getTrackInfo()
@@ -149,7 +156,20 @@ export async function removeFromQueue(uri: string): Promise<boolean> {
     }
 }
 
-// let targetVolume: number | undefined = undefined
+export async function playSong(pos: number): Promise<boolean> {
+    logger.log(`playSong(${pos})`)
+    const d = await device()
+    await d.AVTransportService.Seek({
+        InstanceID: 0,
+        Unit: "TRACK_NR",
+        Target: String(pos + 1)
+    })
+    await d.AVTransportService.Play({
+        InstanceID: 0,
+        Speed: "1"
+    })
+    return true
+}
 
 const volumeCache = new SimpleCache(10000, async (_) => {
     logger.log("volumeCache update")
