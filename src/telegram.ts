@@ -1,8 +1,5 @@
-import { assert } from 'console'
 import TelegramBot, { Message } from 'node-telegram-bot-api'
 import { TELEGRAM_TOKEN } from "./config"
-
-import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
@@ -35,6 +32,7 @@ export async function removeDj(spotifyUri: string) {
 }
 
 
+import { assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
 export default function startTelegram() {
     bot.on("error", (err) => {
         console.error("Error: ", err)
