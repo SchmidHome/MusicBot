@@ -31,7 +31,8 @@ export default function startExpress() {
                     name: song.name,
                     artist: song.artist,
                     coverURL: song.imageUri,
-                    playingTime: await getScheduledTime(uri),
+                    songDurationMs: song.duration,
+                    startDate: await getScheduledTime(uri),
                     dj: await getDj(uri) || ""
                 }
             }));
@@ -42,12 +43,13 @@ export default function startExpress() {
         const currentTrackURI = await getCurrentTrack();
         if (!currentTrackURI) return res.status(404).send();
         const song = await uriToSong(currentTrackURI);
-        const currentTrack: QueueElement = {
+        const currentTrack: PlayingElement = {
             name: song.name,
             artist: song.artist,
             coverURL: song.imageUri,
+            songDurationMs: song.duration,
+            EndDate: await getScheduledTime(song.spotifyUri),
             dj: await getDj(song.spotifyUri) || "",
-            playingTime: await getScheduledTime(currentTrackURI)
         }
         const positionInTrack = timeStringToSeconds((await getTrackInfo()).RelTime)
         res.json({
@@ -60,9 +62,19 @@ export default function startExpress() {
 }
 
 interface QueueElement {
-    name: string;
-    artist: string;
-    coverURL: string;
-    playingTime: Date;
-    dj: string;
+    name: string,
+    artist: string,
+    coverURL: string,
+    songDurationMs: number,
+    startDate: Date,
+    dj: string,
+}
+
+interface PlayingElement {
+    name: string,
+    artist: string,
+    coverURL: string,
+    songDurationMs: number,
+    EndDate: Date,
+    dj: string,
 }
