@@ -32,7 +32,7 @@ export default function startExpress() {
                     artist: song.artist,
                     coverURL: song.imageUri,
                     playingTime: await getScheduledTime(uri),
-                    dj: await getDj(uri) || "?"
+                    dj: await getDj(uri) || ""
                 }
             }));
         res.json(queue);
@@ -46,7 +46,7 @@ export default function startExpress() {
             name: song.name,
             artist: song.artist,
             coverURL: song.imageUri,
-            dj: await getDj(song.spotifyUri) || "?",
+            dj: await getDj(song.spotifyUri) || "",
             playingTime: await getScheduledTime(currentTrackURI)
         }
         const positionInTrack = timeStringToSeconds((await getTrackInfo()).RelTime)
