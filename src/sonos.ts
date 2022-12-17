@@ -60,7 +60,7 @@ export async function getTrackInfo(): Promise<GetPositionInfoResponse> { return 
 
 export function sonosToSpotifyUri(uri: string): string {
     const res = /x-sonos-spotify:spotify:track:(\w{22})?.*/.exec(uri)
-    if (res === null) throw new Error("Invalid Sonos URI")
+    if (res === null) throw new Error("Invalid Sonos URI: " + uri)
     const baseUri = res[1]
     return `spotify:track:${baseUri}`
 }
@@ -73,7 +73,11 @@ export function timeStringToSeconds(time: string): number {
 
 export async function getCurrentTrack(): Promise<string | undefined> {
     logger.log("getCurrentTrack()")
-    return sonosToSpotifyUri((await getTrackInfo()).TrackURI)
+    try {
+        return sonosToSpotifyUri((await getTrackInfo()).TrackURI)
+    } catch (error) {
+        return undefined
+    }
 }
 
 export async function getPlayingState(): Promise<boolean> {
@@ -109,7 +113,7 @@ export async function getScheduledTime(uri: string): Promise<Date> {
     const FaderTime = 12000 //TODO check if crossfade is enabled
 
     // current track
-    const currentTime = (timeStringToSeconds(posInfo.TrackDuration) - timeStringToSeconds(posInfo.RelTime)) * 1000 - FaderTime
+    const currentTime = (timeStringToSeconds(posInfo.TrackDuration) - timeStringToSeconds(posInfo.RelTime)) * 1000 - FaderTime / 2
 
     // queue tracks
     const queueTime = (await queue.slice(0, queue.indexOf(uri)).reduce(async (acc, uri) => {
