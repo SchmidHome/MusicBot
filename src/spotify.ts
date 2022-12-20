@@ -1,11 +1,13 @@
 import SpotifyWebApi from 'spotify-web-api-node'
 import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
-import { Playlist, Song } from './types'
+import { Cached, Lyrics, Playlist, Song } from './types'
 import { assertIsNotNullOrUndefined, between } from './helper'
 import { addToQueue, getAllSongs, getScheduledTime } from './sonos'
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
 import { removeDj, setDj } from './telegram'
+
+import fetch from "node-fetch"
 
 const logger = new ConsoleLogger("spotify")
 
@@ -25,7 +27,7 @@ export function getBackgroundPlaylists() {
     return backgroundPlaylists.find({}).toArray()
 }
 
-const playlistCache = db.collection<Playlist & { validUntil: number }>('playlistCache')
+const playlistCache = db.collection<Cached<Playlist>>('playlistCache')
 
 export async function getPlaylist(uri: string, name: string) {
     const id = uri.slice(34, 56)
@@ -50,9 +52,9 @@ export async function getPlaylist(uri: string, name: string) {
 
         const newPlaylist = {
             id,
-            validUntil: Date.now() + 1000 * 60,
-            songs,
             name,
+            songs,
+            validUntil: Date.now() + 1000 * 60,
         }
         await playlistCache.updateOne({ id }, { $set: newPlaylist }, { upsert: true })
         return newPlaylist
@@ -80,13 +82,13 @@ export async function selectBackgroundPlaylist(name: string) {
 
 // ############################################## CONVERT/FIND
 
-const songCache = db.collection<Song & { validUntil: number }>('songCache')
+const songCache = db.collection<Cached<Song>>('songCache')
 
 let allowedRequests = 0
 setInterval(() => {
     allowedRequests = 10
 }, 2000)
-export async function uriToSong(uri: string): Promise<Song> {
+export async function getSong(uri: string): Promise<Song> {
     const cachedSong = await songCache.findOne({ spotifyUri: uri })
 
     if (cachedSong && cachedSong.validUntil > Date.now()) {
@@ -99,8 +101,25 @@ export async function uriToSong(uri: string): Promise<Song> {
         const id = uri.slice(-22)
         logger.log("        get songs", id)
         const track = await spotify.getTrack(id)
+
         const song = await trackToSong(track.body)
         return song
+    }
+}
+
+const lyricsCache = db.collection<Cached<Lyrics>>('lyricsCache')
+export async function getLyrics(uri: string): Promise<Lyrics> {
+    const cachedLyrics = await lyricsCache.findOne({ spotifyUri: uri })
+
+    if (cachedLyrics && cachedLyrics.validUntil > Date.now()) {
+        return cachedLyrics
+    } else {
+        const id = uri.slice(-22)
+        const lyrics_url = 'http://127.0.0.1:8000/index.php?trackid=' + id
+        const res = await fetch(lyrics_url)
+        const json = await res.json()
+        await lyricsCache.updateOne({ spotifyUri: uri }, { $set: { ...json, validUntil: Date.now() + 1000 * 60 * 60 * 24 * 7 } }, { upsert: true })
+        return json.lyrics
     }
 }
 
@@ -117,13 +136,10 @@ async function trackToSong(track: SpotifyApi.TrackObjectFull) {
     return song
 }
 
-export async function querySong(song: string, offset: number): Promise<Song | undefined> {
-    const tracks = (await spotify.searchTracks(song, {limit: 1, offset})).body.tracks?.items || []
+export async function querySong(song: string, offset: number, limit: number): Promise<Song[]> {
+    const tracks = (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items || []
 
-    if (tracks.length === 0)
-        return undefined
-    const track = tracks[0]
-    return trackToSong(track)
+    return Promise.all(tracks.map(trackToSong))
 }
 
 // ############################################## MAIN
@@ -156,7 +172,7 @@ export async function addTrackFromDefaultPlaylist() {
         const songTime = await getScheduledTime(song.spotifyUri)
 
         await setDj(song.spotifyUri, playlist.name, songTime)
-    
+
     } catch (error) {
         logger.error(error);
     }
@@ -183,7 +199,7 @@ function similar(A: string, B: string) {
 
 // checks if the song was one of the last 100 songs
 export async function songPlayedRecently(song: Song) {
-    const recentlyPlayed = await Promise.all((await getAllSongs()).slice(-100).map(uri => uriToSong(uri)))
+    const recentlyPlayed = await Promise.all((await getAllSongs()).slice(-100).map(uri => getSong(uri)))
     logger.debug(`recentlyPlayed: ${recentlyPlayed.length}`)
     return recentlyPlayed.find(e =>
         e.spotifyUri == song.spotifyUri

@@ -1,10 +1,11 @@
+import { ObjectId } from 'mongodb'
 import TelegramBot, { Message } from 'node-telegram-bot-api'
 import { TELEGRAM_TOKEN } from "./config"
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
 import { addToQueue, getCurrentTrack, getPositionInQueue, getQueue, getScheduledTime, getVolume, removeFromQueue, setVolume } from './sonos'
-import { uriToSong, querySong, songPlayedRecently, addBackgroundPlaylist, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist, getPlaylist } from './spotify'
-import { RegisteredUser, User, UserState } from "./types"
+import { getSong, querySong, songPlayedRecently, addBackgroundPlaylist, selectBackgroundPlaylist, getBackgroundPlaylists, getActiveBackgroundPlaylist, getPlaylist } from './spotify'
+import { RegisteredUser, Song, User, UserState } from "./types"
 import { getUser, setUser, userToString } from "./userDatabase"
 
 const logger = new ConsoleLogger("telegram")
@@ -32,7 +33,39 @@ export async function removeDj(spotifyUri: string) {
 }
 
 
+const searchCache = db.collection<{
+    str: string,
+    results: Song[],
+    validUntil: number
+}>("searchCache")
+
+async function createSearch(msg: string, index = 0) {
+    const result = await searchCache.findOne({ str: msg })
+    if (result && result.validUntil > Date.now()) {
+        return result._id
+    } else {
+        const song = await querySong(msg, index, index + 10)
+        if (song.length === 0) return undefined
+        return (await searchCache.insertOne({
+            str: msg,
+            results: song,
+            validUntil: Date.now() + 5 * 60 * 1000
+        })).insertedId
+    }
+}
+
+async function getSearch(id: ObjectId, index: number) {
+    const result = await searchCache.findOne({ _id: id })
+    if (!result || result.validUntil <= Date.now()) return undefined
+    if (result.results.length > index) {
+        return result.results[index]
+    } else {
+        return undefined //todo fetch more
+    }
+}
+
 import { assertIsAdmin, assertIsDj, assertIsMatch, assertIsNotNull, assertIsNotUndefined, assertIsRegistered, isRegistered } from "./helper"
+import { WithId } from 'mongodb'
 export default function startTelegram() {
     bot.on("error", (err) => {
         console.error("Error: ", err)
@@ -74,23 +107,35 @@ export default function startTelegram() {
     })
 
     // ############################################## SEARCH TRACK
-    async function searchTrackMessage(str: string, user: RegisteredUser, offset = 0) {
+    async function searchTrackMessage(str: string, user: RegisteredUser) {
+        log(user, "search", str)
 
         if (!str) {
             bot.sendMessage(user.chatId, "Please type a song name")
         } else {
-            const song = await querySong(str, offset)
-            if (!song) {
-                bot.sendMessage(user.chatId, "No song found")
+            const searchId = await createSearch(str)
+            if (!searchId) {
+                bot.sendMessage(user.chatId, "No songs found for this search")
             } else {
-                let msg = `*${song.name}*\n${song.artist}\n${song.imageUri}`
-                bot.sendMessage(user.chatId, msg, {
-                    parse_mode: "Markdown", reply_markup:
-                        replyMarkup_AddToQueue_Next_Previous(song.spotifyUri, str, offset)
-                })
+                searchIdMessage(searchId, 0, user)
             }
         }
     }
+
+    async function searchIdMessage(id: ObjectId, index: number, user: RegisteredUser) {
+        log(user, "searchId " + index)
+        const song = await getSearch(id, index)
+        if (!song) {
+            bot.sendMessage(user.chatId, "No more songs found")
+        } else {
+            let msg = `*${song.name}*\n${song.artist}\n${song.imageUri}`
+            bot.sendMessage(user.chatId, msg, {
+                parse_mode: "Markdown", reply_markup:
+                    replyMarkup_AddToQueue_Next(song.spotifyUri, id, index)
+            })
+        }
+    }
+
 
     bot.on("callback_query", async (query) => {
         try {
@@ -132,7 +177,7 @@ export default function startTelegram() {
             log(user, "messsage", msg.text)
 
             logger.log("message: " + msg.text + ", " + userToString(user))
-            searchTrackMessage(msg.text, user, 0)
+            searchTrackMessage(msg.text, user)
         } catch (error) {
             console.error(error)
         }
@@ -145,17 +190,21 @@ export default function startTelegram() {
         }
     }
 
-    function replyMarkup_AddToQueue_Next_Previous(uri: string, str: string, position: number) {
-        let ret = {
-            "inline_keyboard": [
-                [{ "text": "Add to Queue", "callback_data": "/queue " + uri }],
-                [{ "text": "Next", "callback_data": "/find " + str + " " + (position + 1) }],
-            ]
+    function replyMarkup_AddToQueue(uri: string) {
+        return {
+            "inline_keyboard": [[
+                { "text": "Add to Queue", "callback_data": "/queue " + uri }
+            ]]
         }
-        if (position > 0) {
-            ret.inline_keyboard[1].unshift({ "text": "Previous", "callback_data": "/find " + str + " " + (position - 1) })
+    }
+
+    function replyMarkup_AddToQueue_Next(uri: string, id: ObjectId, position: number) {
+        return {
+            "inline_keyboard": [[
+                { "text": "Add to Queue", "callback_data": "/queue " + uri },
+                { "text": "Next", "callback_data": "/find " + id + " " + (position + 1) }
+            ]]
         }
-        return ret
     }
 
     function replyMarkup_Clear() {
@@ -164,15 +213,20 @@ export default function startTelegram() {
         }
     }
 
-    async function onFindSongCallback(user: User, data: string, message_id: number) {
+    async function onFindSongCallback(user: RegisteredUser, data: string, message_id: number) {
         log(user, data)
         assertIsRegistered(user)
         assertIsDj(user)
 
-        const str = data.substring("/find ".length)
-        const [search, offset] = str.split(" ")
 
-        searchTrackMessage(search, user, Number(offset))
+        const str = data.substring("/find ".length)
+        const [id, offset] = /^(\S+) (\d+)$/.exec(str)!.slice(1, 3)
+
+        const song = await getSearch(new ObjectId(id), Number(offset) - 1)
+        if (song)
+            await bot.editMessageReplyMarkup(replyMarkup_AddToQueue(song.spotifyUri), { chat_id: user.chatId, message_id: message_id })
+
+        searchIdMessage(new ObjectId(id), Number(offset), user)
     }
 
     async function onAddSongCallback(user: User, data: string, message_id: number) {
@@ -183,7 +237,7 @@ export default function startTelegram() {
         const uri = data.substring("/queue ".length)
         await bot.editMessageReplyMarkup(replyMarkup_Clear(), { chat_id: user.chatId, message_id })
 
-        const song = await uriToSong(uri)
+        const song = await getSong(uri)
 
         if (await songPlayedRecently(song)) {
             bot.sendMessage(user.chatId, "not again...")
@@ -316,7 +370,7 @@ export default function startTelegram() {
         try {
             const user = await getUser(msg.chat.id)
             log(user, "/queue")
-            bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(uriToSong).map(async s =>
+            bot.sendMessage(user.chatId, "Queue:\n" + (await Promise.all((await getQueue()).map(getSong).map(async s =>
                 `*${(await s).name}*\n${(await s).artist} (${(await getScheduledTime((await s).spotifyUri)).toLocaleTimeString()})`))).join("\n\n"),
                 { parse_mode: "Markdown" })
         } catch (error) {
@@ -333,7 +387,7 @@ export default function startTelegram() {
             if (!currentUri) {
                 bot.sendMessage(user.chatId, "No song is playing")
             } else {
-                const currentSong = (await uriToSong(currentUri))
+                const currentSong = (await getSong(currentUri))
                 bot.sendMessage(user.chatId, "Currently playing:\n" + currentSong.name + " by " + currentSong.artist)
             }
         } catch (error) {

@@ -2,7 +2,7 @@ import { SonosManager } from "@svrooij/sonos"
 import { isString } from "./helper"
 import { SimpleCache } from "@idot-digital/simplecache"
 import { GetPositionInfoResponse } from "@svrooij/sonos/lib/services"
-import { uriToSong } from "./spotify"
+import { getSong } from "./spotify"
 import { ConsoleLogger } from "./logger"
 import { SONOS_DEVICE_IP, SONOS_DEVICE_NAME } from "./config"
 
@@ -117,7 +117,7 @@ export async function getScheduledTime(uri: string): Promise<Date> {
 
     // queue tracks
     const queueTime = (await queue.slice(0, queue.indexOf(uri)).reduce(async (acc, uri) => {
-        const track = await uriToSong(uri)
+        const track = await getSong(uri)
         return await acc + track.duration - FaderTime
     }, Promise.resolve(0)))
 

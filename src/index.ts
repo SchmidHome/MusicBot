@@ -29,7 +29,7 @@ async function checkQueue() {
     } else c = 0
 
     const queue = await getQueue()
-    if (queue.length < 2) {
+    if (queue.length < 1) {
         await addTrackFromDefaultPlaylist()
     }
 }

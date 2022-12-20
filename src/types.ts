@@ -29,3 +29,17 @@ export interface Playlist {
     name: string
     songs: Song[]
 }
+
+export type Cached<T> = T & { validUntil: number }
+
+export interface Lyrics {
+    spotifyUri: string
+    error: boolean
+    syncType: string
+    lines : {
+        startTimeMs: number
+        endTimeMs: number
+        words: string
+        syllables: string
+    }[]
+}

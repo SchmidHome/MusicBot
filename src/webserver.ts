@@ -1,7 +1,7 @@
 import Express from 'express';
 import cors from 'cors';
 import { getCurrentTrack, getQueue, getScheduledTime, getTrackInfo, getVolume, timeStringToSeconds } from './sonos';
-import { uriToSong } from './spotify';
+import { getLyrics, getSong } from './spotify';
 import morgan from 'morgan';
 import { ConsoleLogger } from './logger';
 import { getDj } from './telegram';
@@ -11,9 +11,11 @@ const logger = new ConsoleLogger("webserver")
 export default function startExpress() {
     const app = Express()
     app.use(cors());
-    app.use(morgan('dev', {stream: {
-        write: (message) => logger.log(message.trim())
-    }}))
+    app.use(morgan('dev', {
+        stream: {
+            write: (message) => logger.log(message.trim())
+        }
+    }))
 
     app.get('/', async (req, res) => res.send("MusicBot V1"))
 
@@ -26,7 +28,7 @@ export default function startExpress() {
         const queueURIs = await getQueue();
         const queue: QueueElement[] = await Promise.all(
             queueURIs.map(async (uri): Promise<QueueElement> => {
-                const song = await uriToSong(uri);
+                const song = await getSong(uri);
                 return {
                     name: song.name,
                     artist: song.artist,
@@ -42,7 +44,7 @@ export default function startExpress() {
     app.get("/playing", async (_, res) => {
         const currentTrackURI = await getCurrentTrack();
         if (!currentTrackURI) return res.status(404).send();
-        const song = await uriToSong(currentTrackURI);
+        const song = await getSong(currentTrackURI);
         const currentTrack: PlayingElement = {
             name: song.name,
             artist: song.artist,
@@ -56,6 +58,13 @@ export default function startExpress() {
             currentTrack,
             positionInTrack
         });
+    })
+
+    app.get("/lyrics", async (_, res) => {
+        const currentTrackURI = await getCurrentTrack();
+        if (!currentTrackURI) return res.status(404).send();
+        const lyrics = await getLyrics(currentTrackURI);
+        res.json(lyrics);
     })
 
     app.listen(3000, () => logger.log("Started and listening on port 3000."))
