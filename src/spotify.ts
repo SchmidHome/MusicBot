@@ -5,7 +5,6 @@ import { assertIsNotNullOrUndefined, between } from './helper'
 import { addToQueue, getAllSongs, getScheduledTime } from './sonos'
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
-import { removeDj, setDj } from './telegram'
 
 import fetch from "node-fetch"
 
@@ -136,10 +135,40 @@ async function trackToSong(track: SpotifyApi.TrackObjectFull) {
     return song
 }
 
-export async function querySong(song: string, offset: number, limit: number): Promise<Song[]> {
+async function querySong(song: string, offset: number, limit: number): Promise<Song[]> {
     const tracks = (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items || []
-
     return Promise.all(tracks.map(trackToSong))
+}
+
+const searchCache = db.collection<{
+    str: string,
+    results: Song[],
+    end: boolean,
+    validUntil: number
+}>("searchCache")
+
+export async function querySpotify(searchText: string, searchIndex = 0): Promise<Song | undefined> {
+    const result = await searchCache.findOne({ str: searchText })
+    if (result && result.validUntil > Date.now() && result.results.length > searchIndex) {
+        return result.results[searchIndex]
+    } else if (result && result.validUntil > Date.now() && result.end) {
+        return undefined
+    } else {
+        const songN = await querySong(searchText, result?.results.length || 0, searchIndex + 5)
+        const song = [...(result?.results || []), ...songN]
+        await searchCache.insertOne({
+            str: searchText,
+            results: song,
+            end: songN.length == 0,
+            validUntil: Date.now() + 5 * 60 * 1000
+        })
+        if (song.length <= searchIndex) return undefined
+        return song[searchIndex]
+    }
+}
+
+export function songToString(song: Song) {
+    return `*${song?.name}*\n${song?.artist}\n${song?.imageUri}`
 }
 
 // ############################################## MAIN
@@ -153,13 +182,13 @@ async function setup() {
 setup()
 
 export async function addTrackFromDefaultPlaylist() {
-    try {
+    try { 
         const playlist = await getActiveBackgroundPlaylist()
         if (playlist == undefined) {
             logger.warn(`No default playlist selected.`)
             return
         }
-
+        
         logger.log(`Adding track from ${playlist.name}`)
         const song = await getNewTrack(playlist.songs)
         if (song == undefined) {
@@ -168,10 +197,11 @@ export async function addTrackFromDefaultPlaylist() {
             return
         }
         await addToQueue(song.spotifyUri)
-
+        
         const songTime = await getScheduledTime(song.spotifyUri)
-
-        await setDj(song.spotifyUri, playlist.name, songTime)
+        
+        //TODO queueCache
+        // await setDj(song.spotifyUri, playlist.name, songTime)
 
     } catch (error) {
         logger.error(error);

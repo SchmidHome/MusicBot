@@ -1,37 +1,4 @@
-import { bot } from "./telegram"
-import { RegisteredUser, User, UserState } from "./types"
-
 type anything = boolean | number | string | object | undefined | null
-
-export function isRegistered(user: User): user is RegisteredUser {
-    return user.name !== undefined && user.state !== UserState.unknown
-}
-export function assertIsRegistered(user: User): asserts user is RegisteredUser {
-    if (!isRegistered(user)) {
-        bot.sendMessage(user.chatId, "You are not registered!\nPlease type /start <your_name>")
-        throw new Error("user is not registered")
-    }
-}
-
-export function isDj(user: RegisteredUser): user is RegisteredUser & { state: UserState.dj | UserState.admin } {
-    return user.state === UserState.dj || user.state === UserState.admin
-}
-export function assertIsDj(user: RegisteredUser): asserts user is RegisteredUser & { state: UserState.dj | UserState.admin } {
-    if (!isDj(user)) {
-        bot.sendMessage(user.chatId, "You are not a dj!\nPlease ask an admin to promote you")
-        throw new Error("user is not dj")
-    }
-}
-
-export function isAdmin(user: RegisteredUser): user is RegisteredUser & { state: UserState.admin } {
-    return user.state === UserState.admin
-}
-export function assertIsAdmin(user: RegisteredUser): asserts user is RegisteredUser & { state: UserState.admin } {
-    if (!isAdmin(user)) {
-        bot.sendMessage(user.chatId, "You are not an admin!\nPlease ask an admin to promote you")
-        throw new Error("user is not admin")
-    }
-}
 
 // UNDEFINED
 export function isUndefined(obj: anything): obj is undefined { return obj === undefined }

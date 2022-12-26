@@ -7,8 +7,8 @@ const logger = new ConsoleLogger("mongodb")
 export const client = new MongoClient("mongodb://root:pass@localhost:27017/")
 
 export const db = client.db("musicbot")
-const collection = db.collection('test');
 
+export const collection = db.collection.bind(db)
 
 async function main() {
     logger.log("Connecting to server...")

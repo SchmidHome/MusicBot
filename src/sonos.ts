@@ -46,14 +46,14 @@ async function device(name = SONOS_DEVICE_NAME, coordinator = true) {
 
 // ############################################## CACHE
 
-const trackinfoCache = new SimpleCache(900, async (_) => await (await device()).AVTransportService.GetPositionInfo())
+const trackInfoCache = new SimpleCache(900, async (_) => await (await device()).AVTransportService.GetPositionInfo())
 const queueCache = new SimpleCache(9000, async (_) => {
     let _queue = (await (await device()).GetQueue()).Result
     if (typeof _queue === "string") return []
     return _queue.map(track => track.TrackUri).filter(isString).map(sonosToSpotifyUri)
 })
 export async function getAllSongs(): Promise<string[]> { return (await queueCache.get(""))! }
-export async function getTrackInfo(): Promise<GetPositionInfoResponse> { return (await trackinfoCache.get(""))! }
+export async function getTrackInfo(): Promise<GetPositionInfoResponse> { return (await trackInfoCache.get(""))! }
 
 
 // ############################################## FORMAT FUNCTIONS

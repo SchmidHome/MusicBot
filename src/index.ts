@@ -3,7 +3,7 @@ import { addTrackFromDefaultPlaylist } from "./spotify"
 import startTelegram from "./telegram"
 import startExpress from "./webserver"
 
-console.clear()
+// console.clear()
 
 startExpress()
 startTelegram()
