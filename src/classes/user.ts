@@ -26,13 +26,19 @@ export class User {
         }
         return user
     }
-    private save() {
-        return User.userCollection.updateOne({ chatId: this.chatId }, { $set: this.dbUser })
+    private async save() {
+        await User.userCollection.updateOne({ chatId: this.chatId }, { $set: this.dbUser })
+    }
+    async update() {
+        this.dbUser = await User.userCollection.findOne({ chatId: this.chatId }) || { chatId: this.chatId, state: "unknown" }
+        await this.save()
     }
 
     private constructor(
         private dbUser: DbUser
-    ) { }
+    ) {
+        setInterval(() => { this.update() }, 1000 * 60)
+    }
 
     isRegistered(): this is { name: string } {
         return this.dbUser.state !== "unknown"

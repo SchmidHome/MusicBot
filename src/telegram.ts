@@ -223,15 +223,20 @@ export default function startTelegram() {
         try {
             const user = await User.getUser(msg.chat.id)
             assertIsMatch(match)
+            user.update()
 
             switch (user.state) {
                 case 'unknown':
                     bot.sendMessage(user.chatId, "You are not registered!")
                     break
                 case "user":
+                    bot.sendMessage(user.chatId, "You are a user!")
+                    break
                 case "dj":
+                    bot.sendMessage(user.chatId, "You are a dj!")
+                    break
                 case 'admin':
-                    bot.sendMessage(user.chatId, `You are a ${user.state}!`)
+                    bot.sendMessage(user.chatId, "You are an admin!")
                     break
                 default:
                     bot.sendMessage(user.chatId, "This should not have happened!")
