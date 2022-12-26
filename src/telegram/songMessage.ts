@@ -1,6 +1,7 @@
 import { ObjectId, OptionalId, WithId } from "mongodb";
 import { InlineKeyboardButton } from "node-telegram-bot-api";
 import { QueueElement } from "../classes/queueElement";
+import { User } from "../classes/user";
 import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
 import { querySpotify, songToString } from "../spotify";
@@ -44,6 +45,23 @@ export class SongMessage {
         await songMessage.updateMessage()
         return songMessage
     }
+    static async updateAllMessages() {
+        let allMessages = await this.songMessageCollection.find({}).toArray()
+        for (let { chatId, messageId, _id } of allMessages) {
+            try {
+                if ((await User.getUser(chatId)).isDj()) {
+                    (await this.getSongMessage(messageId)).updateMessage()
+                } else {
+                    logger.debug("User is not DJ, deleting message")
+                    await this.songMessageCollection.deleteOne({ _id })
+                }
+            } catch (error) {
+                logger.error("Error while updating message", error)
+                await this.songMessageCollection.deleteOne({ _id })
+            }
+        }
+    }
+
     private save() {
         return SongMessage.songMessageCollection.updateOne({ messageId: this.dbSongMessage.messageId }, { $set: this.dbSongMessage })
     }
@@ -64,9 +82,9 @@ export class SongMessage {
         const song = await this.getSong()
         if (this.dbSongMessage.queueElementId) {
             // Already in Queue
-            //TODO
-            if (!song) throw new Error("Trying to add song to queue, but no song found")
-            text = "Queued...\n" + songToString(song)
+            let queueElement = await QueueElement.getQueueElement(this.dbSongMessage.queueElementId)
+            text = await queueElement.getString()
+
         } else if (this.queueTimeout !== undefined) {
             // Adding to Queue
             if (!song) throw new Error("Trying to add song to queue, but no song found")
@@ -105,6 +123,9 @@ export class SongMessage {
     public get messageId() {
         return this.dbSongMessage.messageId
     }
+    public get chatId() {
+        return this.dbSongMessage.chatId
+    }
 
     private async setIndex(index: number) {
         logger.info("Setting index", index)
@@ -119,9 +140,12 @@ export class SongMessage {
             logger.info("Adding to queue")
             const song = await this.getSong()
             if (!song) throw new Error("Trying to add song that doesn't exist")
-            QueueElement.createQueueElement(this.messageId, song.spotifyUri)
-
-        }, 20 * 1000)
+            const e = await QueueElement.createQueueElement(this.chatId, song.spotifyUri)
+            this.dbSongMessage.queueElementId = e.id
+            await this.save()
+            await this.updateMessage()
+            await e.updateQueueMessages()
+        }, 10 * 1000)
         this.updateMessage()
     }
 
@@ -142,3 +166,7 @@ export class SongMessage {
         }
     }
 }
+
+setTimeout(() => {
+    SongMessage.updateAllMessages()
+}, 1000)

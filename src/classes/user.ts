@@ -14,6 +14,10 @@ export class User {
     private static userCollection = collection<DbUser>("users")
     private static users: { [userId: string]: User | undefined } = {}
 
+    static async getAllRegisteredUserIds() {
+        return (await this.userCollection.find({ state: { $ne: "unknown" } }).toArray()).map(user => user.chatId)
+    }
+
     static async getUser(chatId: number) {
         let user = this.users[chatId]
         if (!user) {

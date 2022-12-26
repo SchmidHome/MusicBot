@@ -3,7 +3,6 @@ import { InlineKeyboardButton } from "node-telegram-bot-api";
 import { QueueElement } from "../classes/queueElement";
 import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
-import { getSong, querySpotify, songToString } from "../spotify";
 import { editMessage, sendMessage } from "./telegramHelper";
 
 const logger = new ConsoleLogger("QueueMessage")
@@ -30,7 +29,7 @@ export class QueueMessage {
         if (!message) {
             let dbQueueMessage: DbQueueMessage | null = await this.queueMessageCollection.findOne({ messageId })
             if (!dbQueueMessage) {
-                if(!queueElementId) throw new Error("Queue message not found")
+                if (!queueElementId) throw new Error("Queue message not found")
                 message = await this.createQueueMessage(messageId, queueElementId)
             } else {
                 message = new QueueMessage(dbQueueMessage)
@@ -51,15 +50,6 @@ export class QueueMessage {
         return message
     }
 
-    static async updateQueueMessage(chatId: number, queueElementId: ObjectId) {
-        let message = await this.getQueueMessage(chatId, queueElementId)
-        await message.updateMessage()
-        return message
-    }
-    static async updateQueueMessages(chatIds: number[], queueElementId: ObjectId) {
-        return Promise.all(chatIds.map(chatId => this.updateQueueMessage(chatId, queueElementId)))
-    }
-
     private save() {
         return QueueMessage.queueMessageCollection.updateOne({ messageId: this.dbQueueMessage.messageId }, { $set: this.dbQueueMessage })
     }
@@ -69,31 +59,13 @@ export class QueueMessage {
         private dbQueueMessage: DbQueueMessage
     ) { }
 
-    private async updateMessage() {
+    public async updateMessage() {
         logger.debug("Updating message")
         let text: string
         let buttons: InlineKeyboardButton[][] = []
 
         let queueElement = await QueueElement.getQueueElement(this.dbQueueMessage.queueElementId)
-        let song = await getSong(queueElement.spotifyUri)
-
-        // text
-        let atString = queueElement.playTime ? " (at " + queueElement.playTime.toLocaleString() + ")" : ""
-        switch (queueElement.position) {
-            case "playing":
-                text = "Now playing:"
-                break
-            case "played":
-                text = "Played" + atString + ":"
-                break
-            case "new":
-                text = "New Song added!"
-                break
-            default:
-                text = "Position " + queueElement.position + atString + ":"
-                break
-        }
-        text += "\n" + songToString(song)
+        text = await queueElement.getString()
 
         // buttons
         if (queueElement.position !== "playing" && queueElement.position !== "played") {
