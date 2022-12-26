@@ -5,8 +5,8 @@ import { assertIsMatch, assertIsNotNull, assertIsNotUndefined } from "./helper"
 import { SongMessage } from './telegram/songMessage'
 import { User } from './classes/user'
 import { bot } from './telegram/telegramHelper'
-import { QueueMessage } from './telegram/queueMessage'
 import { ObjectId } from 'mongodb'
+import { QueueElement } from './classes/queueElement'
 
 const logger = new ConsoleLogger("telegram")
 
@@ -81,9 +81,9 @@ export default function startTelegram() {
                 const songMessage = await SongMessage.getSongMessage(parseInt(songMessageId))
                 songMessage.receivedCallbackData(task)
             } else if (query.data.startsWith("queueMessage:")) {
-                const [_, queueMessageId, task] = query.data.split(":")
-                const queueMessage = await QueueMessage.getQueueMessage(parseInt(queueMessageId))
-                queueMessage.receivedCallbackData(task)
+                const [_, queueElementId, queueMessageId, task] = query.data.split(":")
+                const queueElement = await QueueElement.getQueueElement(new ObjectId(queueElementId))
+                queueElement.receivedCallbackData(parseInt(queueMessageId), task)
             }
         } catch (error) {
             console.error(error)
@@ -340,7 +340,26 @@ export default function startTelegram() {
         { command: "playing", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },
-    ])
+    ], {
+        scope: {
+            type: 'all_private_chats'
+        },
+        language_code: 'en'
+    })
+
+    bot.setMyCommands([
+        { command: "volume", description: "See and set the volume" },
+        { command: "queue", description: "See the queue" },
+        { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
+        { command: "playing", description: "See the currently playing song" },
+        { command: "state", description: "Get your current state" },
+        { command: "start", description: "Login to your Bot" },
+    ], {
+        scope: {
+            type: "all_private_chats"
+        },
+        language_code: 'de'
+    })
 
     logger.log("Telegram bot started")
 

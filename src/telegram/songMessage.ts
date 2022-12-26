@@ -21,6 +21,13 @@ export class SongMessage {
     private static songMessageCollection = collection<DbSongMessage>("songMessages")
     private static songMessages: { [id: string]: SongMessage | undefined } = {}
 
+    static async getFromQueueElementId(id: ObjectId) {
+        let dbSongMessage = await this.songMessageCollection.findOne({ queueElementId: id })
+        if (!dbSongMessage) {
+            throw new Error("Song message not found")
+        }
+        return this.getSongMessage(dbSongMessage.messageId)
+    }
     static async getSongMessage(messageId: number) {
         let songMessage = this.songMessages[messageId]
         if (!songMessage) {
@@ -66,16 +73,17 @@ export class SongMessage {
         return SongMessage.songMessageCollection.updateOne({ messageId: this.dbSongMessage.messageId }, { $set: this.dbSongMessage })
     }
 
-    private constructor(dbSongMessage: DbSongMessage)
     private constructor(
         private dbSongMessage: DbSongMessage
-    ) { }
+    ) {
+        SongMessage.songMessages[this.dbSongMessage.messageId] = this
+    }
 
     public getSong() {
         return querySpotify(this.dbSongMessage.searchText, this.dbSongMessage.searchIndex)
     }
 
-    private async updateMessage() {
+    public async updateMessage() {
         logger.debug("Updating message")
         let text: string
         let keyboard: InlineKeyboardButton[][] = []
@@ -144,7 +152,7 @@ export class SongMessage {
             this.dbSongMessage.queueElementId = e.id
             await this.save()
             await this.updateMessage()
-            await e.updateQueueMessages()
+            await e.updateMessages()
         }, 10 * 1000)
         this.updateMessage()
     }

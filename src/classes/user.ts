@@ -41,6 +41,7 @@ export class User {
     private constructor(
         private dbUser: DbUser
     ) {
+        User.users[this.chatId] = this
         setInterval(() => { this.update() }, 1000 * 60)
     }
 

@@ -1,18 +1,32 @@
 import { ObjectId, OptionalId, WithId } from "mongodb";
+import { InlineKeyboardButton } from "node-telegram-bot-api";
+import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
 import { getSong, songToString } from "../spotify";
-import { QueueMessage } from "../telegram/queueMessage";
+import { SongMessage } from "../telegram/songMessage";
+import { editMessage, sendMessage } from "../telegram/telegramHelper";
 import { User } from "./user";
+
+const logger = new ConsoleLogger("QueueElement")
+
+export type votedType = "star" | "up" | "down"
+
+function isVotedType(value: string): value is votedType {
+    return value === "star" || value === "up" || value === "down"
+}
+
+type DbQueueMessage = { chatId: number, messageId: number, voted?: votedType }
 
 type DbQueueElement = OptionalId<{
     djChatId: number
     spotifyUri: string
     position: number | "playing" | "played" | "new"
     playStartTime?: Date
+    messages: DbQueueMessage[]
 }>
 
 export class QueueElement {
-    private static queueCollection = collection<DbQueueElement>("queue")
+    private static queueCollection = collection<DbQueueElement>("queueElements")
     private static queue: { [id: string]: QueueElement } = {}
 
     static async getQueueElement(id: ObjectId) {
@@ -31,6 +45,7 @@ export class QueueElement {
             djChatId,
             spotifyUri,
             position: "new",
+            messages: []
         })).insertedId
         return this.getQueueElement(id)
     }
@@ -41,7 +56,7 @@ export class QueueElement {
     static async updateAllMessages() {
         let allElements = await this.queueCollection.find({}).toArray()
         for (let { _id } of allElements) {
-            (await this.getQueueElement(_id)).updateQueueMessages()
+            (await this.getQueueElement(_id)).updateMessages()
         }
     }
 
@@ -71,6 +86,15 @@ export class QueueElement {
         await this.save()
     }
 
+
+    get votes() {
+        return this.dbElement.messages.map(m => m.voted).reduce((votes, vote) => {
+            if (vote)
+                votes[vote] += 1
+            return votes
+        }, { star: 0, up: 0, down: 0 })
+    }
+
     public getPositionString() {
         let atString = this.playTime ? " (at " + this.playTime.toLocaleString() + ")" : ""
         switch (this.position) {
@@ -88,17 +112,102 @@ export class QueueElement {
         let song = await getSong(this.spotifyUri)
         return songToString(song)
     }
-    public async getString() {
-        return this.getPositionString() + "\n" + await this.getSongString()
+    public getVotesString() {
+        let text = ""
+        if (this.votes.star)
+            text += "⭐️x" + this.votes.star + " "
+        if (this.votes.up)
+            text += "👍x" + this.votes.up + " "
+        if (this.votes.down)
+            text += "👎x" + this.votes.down + " "
+        return text
     }
-
-    public async getQueueMessages() {
-        let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
-        return Promise.all(chatIds.map(chatId => QueueMessage.getQueueMessage(chatId, this.id)))
+    public async getString() {
+        return this.getPositionString() + "\n" + this.getVotesString() + "\n" + await this.getSongString()
     }
 
     public async updateQueueMessages() {
-        return Promise.all((await this.getQueueMessages()).map(m => m.updateMessage()))
+        let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
+        for (let chatId of chatIds) {
+            const msg = this.dbElement.messages.find(m => m.chatId === chatId)
+            if (msg) {
+                await this.updateQueueMessage(msg)
+            } else {
+                await this.createQueueMessage(chatId)
+            }
+        }
+    }
+    public async updateQueueMessage(msg: DbQueueMessage) {
+        logger.debug("Updating queue message for chat " + msg.chatId)
+        let text: string
+        let buttons: InlineKeyboardButton[][] = []
+
+        text = await this.getString()
+
+        // buttons
+        if (this.position !== "playing" && this.position !== "played") {
+            buttons = [[
+                {
+                    text: "⭐️",
+                    callback_data: `queueMessage:${this.id}:${msg.messageId}:star`,
+                },
+                {
+                    text: "👍",
+                    callback_data: `queueMessage:${this.id}:${msg.messageId}:up`
+                },
+                {
+                    text: "👎",
+                    callback_data: `queueMessage:${this.id}:${msg.messageId}:down`
+                }
+            ]]
+            switch (msg.voted) {
+                case "star":
+                    buttons[0][0].text = "[⭐️]"
+                    break
+                case "up":
+                    buttons[0][1].text = "[👍]"
+                    break
+                case "down":
+                    buttons[0][2].text = "[👎]"
+                    break
+            }
+            await editMessage(msg.chatId, msg.messageId, text, buttons)
+        }
+    }
+    public async createQueueMessage(chatId: number) {
+        let newMsg = {
+            messageId: await sendMessage(chatId, "New Song added!"),
+            chatId,
+        }
+        this.dbElement.messages.push(newMsg)
+        await this.save()
+        await this.updateQueueMessage(newMsg)
+    }
+
+    public async updateMessages() {
+        logger.debug("Updating queue element messages")
+        await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
+        await this.updateQueueMessages()
+    }
+
+    private async changeVote(msgId: number, vote: "star" | "up" | "down") {
+        let queueElement = this.dbElement.messages.find(m => m.messageId === msgId)
+        if (!queueElement) {
+            throw new Error("Queue element not found")
+        }
+        if (queueElement.voted === vote) {
+            queueElement.voted = undefined
+        } else {
+            queueElement.voted = vote
+        }
+        await this.save()
+        await this.updateMessages()
+    }
+
+    public async receivedCallbackData(msgId: number, data: string) {
+        if (isVotedType(data)) {
+            await this.changeVote(msgId, data)
+        }
     }
 }
 
