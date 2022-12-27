@@ -115,11 +115,11 @@ export class QueueElement {
     public getVotesString() {
         let text = ""
         if (this.votes.star)
-            text += "⭐️x" + this.votes.star + " "
+            text += "⭐️ " + this.votes.star + " "
         if (this.votes.up)
-            text += "👍x" + this.votes.up + " "
+            text += "👍 " + this.votes.up + " "
         if (this.votes.down)
-            text += "👎x" + this.votes.down + " "
+            text += "👎 " + this.votes.down + " "
         return text
     }
     public async getString() {
