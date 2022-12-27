@@ -148,7 +148,7 @@ export class SongMessage {
             logger.info("Adding to queue")
             const song = await this.getSong()
             if (!song) throw new Error("Trying to add song that doesn't exist")
-            const e = await QueueElement.createQueueElement(this.chatId, song.spotifyUri)
+            const e = await QueueElement.createNewQueueElement(this.chatId, song.spotifyUri)
             this.dbSongMessage.queueElementId = e.id
             await this.save()
             await this.updateMessage()

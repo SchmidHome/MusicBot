@@ -1,6 +1,7 @@
 import { QueueElement } from "./classes/queueElement"
 import { ConsoleLogger } from "./logger"
-import { getPlaying, getPlayingState } from "./sonos/sonosPlayControl"
+import { addNextSpotifyUri, getPlaying, getPlayingState } from "./sonos/sonosPlayControl"
+import { getSongFromDefaultPlaylist } from "./spotify"
 import { registerCommands } from "./telegram/telegram"
 import startExpress from "./webserver"
 
@@ -58,7 +59,28 @@ async function checkPlaying() {
     } else {
         // same Song is playing, update time
         await playingElement.setPlayStartTime(playing.startDate)
+        logger.log("same Song is playing, update time to " + playing.startDate + "")
         await QueueElement.updateTime()
+
+        // find next or set new one
+        let next = await QueueElement.getNext()
+        if (!next) {
+            const queue = await QueueElement.getQueue()
+            if (queue.length > 0) {
+                next = queue[0]
+                await next.setPosition("next")
+                logger.log("add next from queue")
+            } else {
+                let newSong = await getSongFromDefaultPlaylist()
+                if (!newSong) {
+                    logger.warn("no next, no queue, default playlist empty")
+                    return
+                }
+                next = await QueueElement.createNextQueueElement(newSong.spotifyUri)
+                logger.log("add next from default playlist")
+            }
+            await addNextSpotifyUri(next.spotifyUri)
+        }
     }
 }
 

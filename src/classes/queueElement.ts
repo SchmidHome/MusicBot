@@ -2,7 +2,7 @@ import { ObjectId, OptionalId, WithId } from "mongodb";
 import { InlineKeyboardButton } from "node-telegram-bot-api";
 import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
-import { getSong, getSongFromDefaultPlaylist, songToString } from "../spotify";
+import { getSong, songToString } from "../spotify";
 import { SongMessage } from "./songMessage";
 import { editMessage, sendMessage } from "../telegram/telegram";
 import { Song } from "../types";
@@ -39,17 +39,9 @@ export class QueueElement {
     static async setPlaying(spotifyUri: string) {
         let element = await this.queueCollection.findOne({ spotifyUri })
     }
-    static async getNext(force = false) {
+    static async getNext() {
         let element = await this.queueCollection.findOne({ position: "next" })
-        if (!element) {
-            if (force) {
-                let newSong = await getSongFromDefaultPlaylist()
-                if (!newSong) return undefined
-                return this.createQueueElement(undefined, newSong.spotifyUri)
-            } else {
-                return undefined
-            }
-        }
+        if (!element) return undefined
         return this.getQueueElement(element._id)
     }
     static async getQueue() {
@@ -131,11 +123,11 @@ export class QueueElement {
         }
         return element
     }
-    static async createQueueElement(djChatId: number | undefined, spotifyUri: string) {
+    static async createNewQueueElement(djChatId: number, spotifyUri: string) {
         const id = (await this.queueCollection.insertOne({
             djChatId,
             spotifyUri,
-            position: djChatId ? "new" : "next",
+            position: "new",
             messages: []
         })).insertedId
         return this.getQueueElement(id)
@@ -144,6 +136,14 @@ export class QueueElement {
         const id = (await this.queueCollection.insertOne({
             spotifyUri,
             position: "playing",
+            messages: []
+        })).insertedId
+        return this.getQueueElement(id)
+    }
+    static async createNextQueueElement(spotifyUri: string) {
+        const id = (await this.queueCollection.insertOne({
+            spotifyUri,
+            position: "next",
             messages: []
         })).insertedId
         return this.getQueueElement(id)
@@ -297,7 +297,7 @@ export class QueueElement {
 
     public async updateMessages() {
         logger.debug("Updating queue element messages")
-        if(this.dbElement.djChatId)
+        if (this.dbElement.djChatId)
             await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
         await this.updateQueueMessages()
     }

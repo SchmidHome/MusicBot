@@ -8,10 +8,6 @@ import { QueueElement } from './classes/queueElement';
 
 const logger = new ConsoleLogger("webserver")
 
-function timeStringToSeconds(time: string): number {
-    const [hours, minutes, seconds] = time.split(":").map(Number)
-    return hours * 3600 + minutes * 60 + seconds
-}
 
 export default function startExpress() {
     const app = Express()

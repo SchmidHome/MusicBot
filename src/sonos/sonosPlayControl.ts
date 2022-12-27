@@ -1,5 +1,10 @@
 import { device, logger, sonosToSpotifyUri } from "./sonos"
 
+function timeStringToSeconds(time: string): number {
+    const [hours, minutes, seconds] = time.split(":").map(Number)
+    return hours * 3600 + minutes * 60 + seconds
+}
+
 export async function getPlaying(): Promise<{ spotifyUri: string, startDate: Date } | undefined> {
     logger.log("getPlayingSpotifyUri()")
     const d = await device()
@@ -7,7 +12,7 @@ export async function getPlaying(): Promise<{ spotifyUri: string, startDate: Dat
         let info = await d.AVTransportService.GetPositionInfo()
         return {
             spotifyUri: sonosToSpotifyUri(info.TrackURI),
-            startDate: new Date(Date.now() - Number(info.RelTime) * 1000)
+            startDate: new Date(Date.now() - Number(timeStringToSeconds(info.RelTime) * 1000))
         }
     } catch (error) {
         return undefined
