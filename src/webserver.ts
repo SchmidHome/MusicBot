@@ -1,11 +1,17 @@
 import Express from 'express';
 import cors from 'cors';
-import { getCurrentTrack, getQueue, getScheduledTime, getTrackInfo, getVolume, timeStringToSeconds } from './sonos';
 import { getLyrics, getSong } from './spotify';
 import morgan from 'morgan';
 import { ConsoleLogger } from './logger';
+import { getVolume } from './sonos/sonosVolumeControl';
+import { QueueElement } from './classes/queueElement';
 
 const logger = new ConsoleLogger("webserver")
+
+function timeStringToSeconds(time: string): number {
+    const [hours, minutes, seconds] = time.split(":").map(Number)
+    return hours * 3600 + minutes * 60 + seconds
+}
 
 export default function startExpress() {
     const app = Express()
@@ -24,35 +30,36 @@ export default function startExpress() {
     })
 
     app.get("/queue", async (_, res) => {
-        const queueURIs = await getQueue();
-        const queue: QueueElement[] = await Promise.all(
-            queueURIs.map(async (uri): Promise<QueueElement> => {
-                const song = await getSong(uri);
+        const queueElements = await QueueElement.getNextAndQueue();
+        const queue: ApiQueueElement[] = await Promise.all(
+            queueElements.map(async (e): Promise<ApiQueueElement> => {
+                const song = await e.getSong();
                 return {
                     name: song.name,
                     artist: song.artist,
                     coverURL: song.imageUri,
-                    songDurationMs: song.duration,
-                    startDate: await getScheduledTime(uri),
-                    dj: "" //TODO
+                    songDurationMs: song.duration_ms,
+                    startDate: e.playStartTime || new Date(), //TODO
+                    dj: (await e.getDj())?.name || "",
                 }
             }));
         res.json(queue);
     })
 
     app.get("/playing", async (_, res) => {
-        const currentTrackURI = await getCurrentTrack();
-        if (!currentTrackURI) return res.status(404).send();
-        const song = await getSong(currentTrackURI);
-        const currentTrack: PlayingElement = {
+        const playing = await QueueElement.getPlaying()
+        if (!playing) return res.status(404).send()
+
+        const song = await playing.getSong()
+        const currentTrack: ApiPlayingElement = {
             name: song.name,
             artist: song.artist,
             coverURL: song.imageUri,
-            songDurationMs: song.duration,
-            endDate: await getScheduledTime(song.spotifyUri), //todo send correct end date
-            dj: "", //TODO
+            songDurationMs: song.duration_ms,
+            endDate: new Date((playing.playStartTime || new Date()).getMilliseconds() + song.duration_ms), //TODO
+            dj: (await playing.getDj())?.name || "",
         }
-        const positionInTrack = timeStringToSeconds((await getTrackInfo()).RelTime)
+        const positionInTrack = new Date(Date.now() - (playing.playStartTime || new Date()).getMilliseconds())
         res.json({
             currentTrack,
             positionInTrack
@@ -60,16 +67,17 @@ export default function startExpress() {
     })
 
     app.get("/lyrics", async (_, res) => {
-        const currentTrackURI = await getCurrentTrack();
-        if (!currentTrackURI) return res.status(404).send();
-        const lyrics = await getLyrics(currentTrackURI);
+        const playing = await QueueElement.getPlaying()
+        if (!playing) return res.status(404).send()
+
+        const lyrics = await getLyrics(playing.spotifyUri);
         res.json(lyrics);
     })
 
     app.listen(3000, () => logger.log("Started and listening on port 3000."))
 }
 
-interface QueueElement {
+interface ApiQueueElement {
     name: string,
     artist: string,
     coverURL: string,
@@ -78,7 +86,7 @@ interface QueueElement {
     dj: string,
 }
 
-interface PlayingElement {
+interface ApiPlayingElement {
     name: string,
     artist: string,
     coverURL: string,

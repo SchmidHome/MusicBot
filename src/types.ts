@@ -4,7 +4,7 @@ export interface Song {
     album: string
     imageUri: string
     spotifyUri: string
-    duration: number
+    duration_ms: number
 }
 
 export interface Playlist {

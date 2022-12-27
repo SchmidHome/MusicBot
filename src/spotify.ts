@@ -2,11 +2,11 @@ import SpotifyWebApi from 'spotify-web-api-node'
 import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from './config'
 import { Cached, Lyrics, Playlist, Song } from './types'
 import { assertIsNotNullOrUndefined, between } from './helper'
-import { addToQueue, getAllSongs, getScheduledTime } from './sonos'
 import { ConsoleLogger } from './logger'
 import { db } from './mongodb'
 
 import fetch from "node-fetch"
+import { QueueElement } from './classes/queueElement'
 
 const logger = new ConsoleLogger("spotify")
 
@@ -129,7 +129,7 @@ async function trackToSong(track: SpotifyApi.TrackObjectFull) {
         album: track.album.name,
         imageUri: track.album.images[0].url,
         spotifyUri: track.uri,
-        duration: track.duration_ms,
+        duration_ms: track.duration_ms,
     }
     await songCache.updateOne({ spotifyUri: track.uri }, { $set: { ...song, validUntil: Date.now() + 1000 * 60 * 60 * 24 * 7 } }, { upsert: true })
     return song
@@ -181,27 +181,22 @@ async function setup() {
 }
 setup()
 
-export async function addTrackFromDefaultPlaylist() {
-    try { 
+export async function getSongFromDefaultPlaylist() {
+    try {
         const playlist = await getActiveBackgroundPlaylist()
         if (playlist == undefined) {
             logger.warn(`No default playlist selected.`)
             return
         }
-        
-        logger.log(`Adding track from ${playlist.name}`)
+
+        logger.log(`Getting track from ${playlist.name}`)
         const song = await getNewTrack(playlist.songs)
         if (song == undefined) {
             logger.warn(`No new track found in ${playlist.name}`)
-            selectBackgroundPlaylist("Johannes Partymix")
+            selectBackgroundPlaylist("Johannes Partymix")//!
             return
         }
-        await addToQueue(song.spotifyUri)
-        
-        const songTime = await getScheduledTime(song.spotifyUri)
-        
-        //TODO queueCache
-        // await setDj(song.spotifyUri, playlist.name, songTime)
+        return song
 
     } catch (error) {
         logger.error(error);
@@ -213,26 +208,11 @@ async function getNewTrack(playlist: Song[]): Promise<Song | undefined> {
     let i = between(0, playlist.length)
     const iStart = i
 
-    while (await songPlayedRecently(playlist[i])) {
+    while (await QueueElement.songPlayedRecently(playlist[i])) {
         i++
         if (i >= playlist.length) i = 0
         if (i == iStart) return undefined
     }
     logger.log(`${playlist[i].name} (${playlist[i].artist}) selected`)
     return playlist[i]
-}
-
-function similar(A: string, B: string) {
-    // true when A in B or B in A
-    return A.toLowerCase().includes(B.toLowerCase()) || B.toLowerCase().includes(A.toLowerCase())
-}
-
-// checks if the song was one of the last 100 songs
-export async function songPlayedRecently(song: Song) {
-    const recentlyPlayed = await Promise.all((await getAllSongs()).slice(-100).map(uri => getSong(uri)))
-    logger.debug(`recentlyPlayed: ${recentlyPlayed.length}`)
-    return recentlyPlayed.find(e =>
-        e.spotifyUri == song.spotifyUri
-        || similar(e.name, song.name) && similar(e.artist, song.artist)
-    ) != undefined
 }

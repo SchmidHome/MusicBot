@@ -1,38 +1,66 @@
-import { getAllSongs, getCurrentTrack, getPlayingState, getPositionInAllSongs, getQueue, playSong } from "./sonos"
-import { addTrackFromDefaultPlaylist } from "./spotify"
-import startTelegram from "./telegram"
+import { QueueElement } from "./classes/queueElement"
+import { ConsoleLogger } from "./logger"
+import { getPlaying, getPlayingState } from "./sonos/sonosPlayControl"
+import { registerCommands } from "./telegram/telegram"
 import startExpress from "./webserver"
 
 // console.clear()
 
 startExpress()
-startTelegram()
+registerCommands()
 
-let c = 0
-async function checkQueue() {
-    const playing = await getCurrentTrack()
-    if (playing) {
-        if (await getPositionInAllSongs(playing) === 0) {
-            if (!await getPlayingState()) {
-                c++
-                if (c > 1) {
-                    console.log("Playlist ran out, add new track and continue")
 
-                    const oldQueue = await getAllSongs()
-                    await addTrackFromDefaultPlaylist()
-                    await new Promise(resolve => setTimeout(resolve, 5 * 1000))
-                    // continue
-                    await playSong(oldQueue.length)
-                }
-            } else c = 0
-        } else c = 0
-    } else c = 0
+const logger = new ConsoleLogger("index")
 
-    const queue = await getQueue()
-    if (queue.length < 1) {
-        await addTrackFromDefaultPlaylist()
+
+
+async function checkPlaying() {
+    const playingState = await getPlayingState()
+    if (!playingState) {
+        // paused
+        logger.log("paused")
+    }
+
+    const playing = await getPlaying()
+    if (!playing) {
+        // nothing is playing
+        logger.log("nothing is playing")
+        return
+    }
+
+    const playingElement = await QueueElement.getPlaying()
+
+    if (!playingElement || playingElement.spotifyUri !== playing.spotifyUri) {
+        // new Song is playing
+        await playingElement?.setPosition("played")
+
+        const next = await QueueElement.getNext()
+        if (next && next.spotifyUri === playing.spotifyUri) {
+            await next.setPosition("playing")
+            logger.log("new Song is playing, is next")
+            return
+        } else if (next) {
+            next?.setPosition("new")
+            logger.warn("new Song is playing, but not next")
+        }
+
+        const queue = await QueueElement.getQueue()
+        const queueElement = queue.find(e => e.spotifyUri === playing.spotifyUri)
+        if (queueElement) {
+            await queueElement.setPosition("playing")
+            logger.log("new Song is playing, found in queue")
+            return
+        }
+
+        await QueueElement.createPlayingQueueElement(playing.spotifyUri)
+        logger.warn("new Song is playing, not in queue")
+
+    } else {
+        // same Song is playing, update time
+        await playingElement.setPlayStartTime(playing.startDate)
+        await QueueElement.updateTime()
     }
 }
 
-setTimeout(checkQueue, 2 * 1000)
-setInterval(checkQueue, 20 * 1000)
+setTimeout(checkPlaying, 2 * 1000)
+setInterval(checkPlaying, 10 * 1000)

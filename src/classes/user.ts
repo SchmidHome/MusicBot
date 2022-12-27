@@ -1,6 +1,6 @@
 import { OptionalId } from "mongodb";
 import { collection } from "../mongodb";
-import { sendMessage } from "../telegram/telegramHelper";
+import { sendMessage } from "../telegram/telegram";
 
 type UserState = "unknown" | "user" | "dj" | "admin"
 
@@ -103,22 +103,22 @@ export class User {
     // message templates
 
     sendAlreadyRegisteredMessage() {
-        sendMessage(this.chatId, `You are already registered, ${this.name}!`)
+        return sendMessage(this.chatId, `You are already registered, ${this.name}!`)
     }
     sendNotRegisteredMessage() {
-        sendMessage(this.chatId, `You are not registered!\nPlease register with /start _your name_`)
+        return sendMessage(this.chatId, `You are not registered!\nPlease register with /start _your name_`)
     }
     sendNotDjMessage() {
-        sendMessage(this.chatId, `You are not a DJ!`)
+        return sendMessage(this.chatId, `You are not a DJ!`)
     }
     sendNotAdminMessage() {
-        sendMessage(this.chatId, `You are not an admin!`)
+        return sendMessage(this.chatId, `You are not an admin!`)
     }
 
     sendWelcomeUnknownMessage() {
-        sendMessage(this.chatId, `Welcome to the DJ Bot!\nPlease register with /start _your name_`)
+        return sendMessage(this.chatId, `Welcome to the DJ Bot!\nPlease register with /start _your name_`)
     }
     sendWelcomeUserMessage() {
-        sendMessage(this.chatId, `Welcome ${this.name}!`)
+        return sendMessage(this.chatId, `Welcome ${this.name}!`)
     }
 }

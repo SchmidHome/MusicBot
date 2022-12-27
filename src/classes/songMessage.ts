@@ -1,11 +1,11 @@
 import { ObjectId, OptionalId, WithId } from "mongodb";
 import { InlineKeyboardButton } from "node-telegram-bot-api";
-import { QueueElement } from "../classes/queueElement";
-import { User } from "../classes/user";
+import { QueueElement } from "./queueElement";
+import { User } from "./user";
 import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
 import { querySpotify, songToString } from "../spotify";
-import { editMessage, sendMessage } from "./telegramHelper";
+import { editMessage, sendMessage } from "../telegram/telegram";
 
 const logger = new ConsoleLogger("SongMessage")
 

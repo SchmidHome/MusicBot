@@ -2,14 +2,16 @@ import { ObjectId, OptionalId, WithId } from "mongodb";
 import { InlineKeyboardButton } from "node-telegram-bot-api";
 import { ConsoleLogger } from "../logger";
 import { collection } from "../mongodb";
-import { getSong, songToString } from "../spotify";
-import { SongMessage } from "../telegram/songMessage";
-import { editMessage, sendMessage } from "../telegram/telegramHelper";
+import { getSong, getSongFromDefaultPlaylist, songToString } from "../spotify";
+import { SongMessage } from "./songMessage";
+import { editMessage, sendMessage } from "../telegram/telegram";
+import { Song } from "../types";
 import { User } from "./user";
 
 const logger = new ConsoleLogger("QueueElement")
 
 export type votedType = "star" | "up" | "down"
+export type positionType = "new" | number | "next" | "playing" | "played"
 
 function isVotedType(value: string): value is votedType {
     return value === "star" || value === "up" || value === "down"
@@ -18,9 +20,9 @@ function isVotedType(value: string): value is votedType {
 type DbQueueMessage = { chatId: number, messageId: number, voted?: votedType }
 
 type DbQueueElement = OptionalId<{
-    djChatId: number
+    djChatId?: number
     spotifyUri: string
-    position: number | "playing" | "played" | "new"
+    position: positionType
     playStartTime?: Date
     messages: DbQueueMessage[]
 }>
@@ -28,6 +30,95 @@ type DbQueueElement = OptionalId<{
 export class QueueElement {
     private static queueCollection = collection<DbQueueElement>("queueElements")
     private static queue: { [id: string]: QueueElement } = {}
+
+    static async getPlaying() {
+        let element = await this.queueCollection.findOne({ position: "playing" })
+        if (!element) return undefined
+        return this.getQueueElement(element._id)
+    }
+    static async setPlaying(spotifyUri: string) {
+        let element = await this.queueCollection.findOne({ spotifyUri })
+    }
+    static async getNext(force = false) {
+        let element = await this.queueCollection.findOne({ position: "next" })
+        if (!element) {
+            if (force) {
+                let newSong = await getSongFromDefaultPlaylist()
+                if (!newSong) return undefined
+                return this.createQueueElement(undefined, newSong.spotifyUri)
+            } else {
+                return undefined
+            }
+        }
+        return this.getQueueElement(element._id)
+    }
+    static async getQueue() {
+        let elements = await this.queueCollection.find({ position: { $gt: 0 } }).sort({ position: 1 }).toArray()
+        return Promise.all(elements.map(e => this.getQueueElement(e._id)))
+    }
+    static async getNextAndQueue() {
+        let next = await this.getNext()
+        let queue = await this.getQueue()
+        if (next)
+            return [next, ...queue]
+        else
+            return queue
+    }
+    static async getNew() {
+        let elements = await this.queueCollection.find({ position: "new" }).toArray()
+        return Promise.all(elements.map(e => this.getQueueElement(e._id)))
+    }
+
+    static async songPlayedRecently(song: Song) {
+        //TODO
+        //TODO check similar titles
+        return false
+    }
+
+    static async sortQueue() {
+        let next = await this.getNext()
+        let elements = [...await this.getQueue(), ...await this.getNew()]
+        let startPos = next ? 0 : 1
+
+        elements = elements.sort((a, b) => {
+            let aVotes = a.votes.star * 2 + a.votes.up
+            let bVotes = b.votes.star * 2 + b.votes.up
+            if (aVotes === bVotes) {
+                if (typeof a.position === "number" && typeof b.position === "number") {
+                    return b.position - a.position
+                } else if (typeof a.position === "number") {
+                    return -1
+                } else {
+                    return 1
+                }
+            }
+            return bVotes - aVotes
+        })
+
+        await Promise.all(elements.map((e, i) => e.setPosition(startPos + i)))
+        await this.updateTime()
+    }
+    static async updateTime() {
+        const faderTime = 1000 * 12
+
+        let playing = await this.getPlaying()
+        if (!playing) return
+        if (!playing.playStartTime) return
+
+        let time = playing.playStartTime.getTime() + (await playing.getSong()).duration_ms - (faderTime / 2)
+
+        let next = await this.getNext()
+        if (next) {
+            await next.setPlayStartTime(new Date(time - faderTime))
+            time += (await next.getSong()).duration_ms - faderTime
+        }
+
+        let queue = await this.getQueue()
+        for (let element of queue) {
+            await element.setPlayStartTime(new Date(time - faderTime))
+            time += (await element.getSong()).duration_ms - faderTime
+        }
+    }
 
     static async getQueueElement(id: ObjectId) {
         let element = this.queue[id.toHexString()]
@@ -40,11 +131,19 @@ export class QueueElement {
         }
         return element
     }
-    static async createQueueElement(djChatId: number, spotifyUri: string) {
+    static async createQueueElement(djChatId: number | undefined, spotifyUri: string) {
         const id = (await this.queueCollection.insertOne({
             djChatId,
             spotifyUri,
-            position: "new",
+            position: djChatId ? "new" : "next",
+            messages: []
+        })).insertedId
+        return this.getQueueElement(id)
+    }
+    static async createPlayingQueueElement(spotifyUri: string) {
+        const id = (await this.queueCollection.insertOne({
+            spotifyUri,
+            position: "playing",
             messages: []
         })).insertedId
         return this.getQueueElement(id)
@@ -62,7 +161,9 @@ export class QueueElement {
 
     private constructor(
         private dbElement: WithId<DbQueueElement>
-    ) { }
+    ) {
+        QueueElement.queue[this.id.toHexString()] = this
+    }
 
     get id() {
         return this.dbElement._id
@@ -74,18 +175,24 @@ export class QueueElement {
     get position() {
         return this.dbElement.position
     }
-    async setPosition(position: number) {
+    async setPosition(position: positionType) {
+        if (this.position == position) return
         this.dbElement.position = position
         await this.save()
     }
-    get playTime() {
+
+    get playStartTime() {
         return this.dbElement.playStartTime
     }
-    async setPlayTime(playTime: Date) {
+    async setPlayStartTime(playTime: Date) {
         this.dbElement.playStartTime = playTime
         await this.save()
     }
 
+    async getDj() {
+        if (!this.dbElement.djChatId) return undefined
+        return await User.getUser(this.dbElement.djChatId)
+    }
 
     get votes() {
         return this.dbElement.messages.map(m => m.voted).reduce((votes, vote) => {
@@ -96,7 +203,7 @@ export class QueueElement {
     }
 
     public getPositionString() {
-        let atString = this.playTime ? " (at " + this.playTime.toLocaleString() + ")" : ""
+        let atString = this.playStartTime ? " (at " + this.playStartTime.toLocaleString() + ")" : ""
         switch (this.position) {
             case "playing":
                 return "Now playing:"
@@ -108,9 +215,11 @@ export class QueueElement {
                 return "Position " + this.position + atString + ":"
         }
     }
+    public async getSong() {
+        return await getSong(this.spotifyUri)
+    }
     public async getSongString() {
-        let song = await getSong(this.spotifyUri)
-        return songToString(song)
+        return songToString(await this.getSong())
     }
     public getVotesString() {
         let text = ""
@@ -133,7 +242,9 @@ export class QueueElement {
             if (msg) {
                 await this.updateQueueMessage(msg)
             } else {
-                await this.createQueueMessage(chatId)
+                if (typeof this.position === "number") {
+                    await this.createQueueMessage(chatId)
+                }
             }
         }
     }
@@ -186,7 +297,8 @@ export class QueueElement {
 
     public async updateMessages() {
         logger.debug("Updating queue element messages")
-        await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
+        if(this.dbElement.djChatId)
+            await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
         await this.updateQueueMessages()
     }
 
@@ -214,3 +326,7 @@ export class QueueElement {
 setTimeout(() => {
     QueueElement.updateAllMessages()
 }, 1000)
+
+setInterval(() => {
+    QueueElement.sortQueue()
+}, 1000 * 10)
