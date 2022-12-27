@@ -11,7 +11,8 @@ const logger = new ConsoleLogger("webserver")
 
 export default function startExpress() {
     const app = Express()
-    app.use(cors());
+    app.use(cors({ origin: "*" }))
+
     app.use(morgan('dev', {
         stream: {
             write: (message) => logger.log(message.trim())

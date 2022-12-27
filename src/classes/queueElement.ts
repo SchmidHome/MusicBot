@@ -31,13 +31,12 @@ export class QueueElement {
     private static queueCollection = collection<DbQueueElement>("queueElements")
     private static queue: { [id: string]: QueueElement } = {}
 
+    changed = true
+
     static async getPlaying() {
         let element = await this.queueCollection.findOne({ position: "now" })
         if (!element) return undefined
         return this.getQueueElement(element._id)
-    }
-    static async setPlaying(spotifyUri: string) {
-        let element = await this.queueCollection.findOne({ spotifyUri })
     }
     static async getNext() {
         let element = await this.queueCollection.findOne({ position: "next" })
@@ -73,11 +72,11 @@ export class QueueElement {
         let startPos = next ? 0 : 1
 
         elements = elements.sort((a, b) => {
-            let aVotes = a.votes.star * 2 + a.votes.up
-            let bVotes = b.votes.star * 2 + b.votes.up
+            let aVotes = a.votes.star * 2 + a.votes.up - a.votes.down
+            let bVotes = b.votes.star * 2 + b.votes.up - b.votes.down
             if (aVotes === bVotes) {
                 if (typeof a.position === "number" && typeof b.position === "number") {
-                    return b.position - a.position
+                    return a.position - b.position
                 } else if (typeof a.position === "number") {
                     return -1
                 } else {
@@ -110,7 +109,7 @@ export class QueueElement {
             await element.setPlayStartTime(new Date(time - faderTime))
             time += (await element.getSong()).duration_ms - faderTime
         }
-        this.updateAllMessages()
+        // this.updateAllMessages()
     }
 
     static async getQueueElement(id: ObjectId) {
@@ -178,7 +177,9 @@ export class QueueElement {
     }
     async setPosition(position: positionType) {
         if (this.position == position) return
+        logger.debug(`Setting position of ${(await this.getSong()).name} to ${position}`)
         this.dbElement.position = position
+        this.changed = true
         await this.save()
     }
 
@@ -186,7 +187,10 @@ export class QueueElement {
         return this.dbElement.playStartTime
     }
     async setPlayStartTime(playTime: Date) {
+        if (this.playStartTime && Math.abs(this.playStartTime.getTime() - playTime.getTime()) < 1000) return
+        logger.debug(`Setting playStartTime of ${(await this.getSong()).name} to ${playTime}`)
         this.dbElement.playStartTime = playTime
+        this.changed = true
         await this.save()
     }
 
@@ -249,7 +253,10 @@ export class QueueElement {
             + await this.getSongString(this.position !== "played")
     }
 
-    public async updateQueueMessages() {
+    private async updateQueueMessages() {
+        if (!this.changed) return
+        this.changed = false
+        logger.debug("Updating queue messages for " + (await this.getSong()).name)
         let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
         for (let chatId of chatIds) {
             const msg = this.dbElement.messages.find(m => m.chatId === chatId)
@@ -262,8 +269,8 @@ export class QueueElement {
             }
         }
     }
-    public async updateQueueMessage(msg: DbQueueMessage) {
-        logger.debug("Updating queue message for chat " + msg.chatId)
+    private async updateQueueMessage(msg: DbQueueMessage) {
+        // logger.debug("Updating queue message for chat " + msg.chatId)
         let text: string
         let buttons: InlineKeyboardButton[][] = []
 
@@ -299,7 +306,7 @@ export class QueueElement {
         }
         await editMessage(msg.chatId, msg.messageId, text, buttons)
     }
-    public async createQueueMessage(chatId: number) {
+    private async createQueueMessage(chatId: number) {
         let newMsg = {
             messageId: await sendMessage(chatId, "New Song added!"),
             chatId,
@@ -310,7 +317,7 @@ export class QueueElement {
     }
 
     public async updateMessages() {
-        logger.debug("Updating queue element messages")
+        // logger.debug("Updating queue element messages")
         if (this.dbElement.djChatId)
             await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
         await this.updateQueueMessages()

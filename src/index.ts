@@ -5,8 +5,6 @@ import { getSongFromDefaultPlaylist } from "./spotify"
 import { registerCommands } from "./telegram/telegram"
 import startExpress from "./webserver"
 
-// console.clear()
-
 startExpress()
 registerCommands()
 
@@ -35,6 +33,7 @@ async function checkPlaying() {
         const next = await QueueElement.getNext()
         if (next && next.spotifyUri === playing.spotifyUri) {
             await next.setPosition("now")
+            await next.setPlayStartTime(playing.startDate)
             logger.log("new Song is playing, is next")
             return
         } else if (next) {
@@ -46,6 +45,7 @@ async function checkPlaying() {
         const queueElement = queue.find(e => e.spotifyUri === playing.spotifyUri)
         if (queueElement) {
             await queueElement.setPosition("now")
+            await queueElement.setPlayStartTime(playing.startDate)
             logger.log("new Song is playing, found in queue")
             return
         }

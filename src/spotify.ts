@@ -98,12 +98,21 @@ export async function getSong(uri: string): Promise<Song> {
         }
         allowedRequests--
         const id = uri.slice(-22)
-        logger.log("        get songs", id)
+        logger.log("get songs", id)
         const track = await spotify.getTrack(id)
 
         const song = await trackToSong(track.body)
         return song
     }
+}
+async function querySong(song: string, offset: number, limit: number): Promise<Song[]> {
+    const tracks = (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items || []
+    while (allowedRequests <= 0) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    allowedRequests--
+    logger.log("query songs", song, offset, limit)
+    return Promise.all(tracks.map(trackToSong))
 }
 
 const lyricsCache = db.collection<Cached<Lyrics>>('lyricsCache')
@@ -135,10 +144,6 @@ async function trackToSong(track: SpotifyApi.TrackObjectFull) {
     return song
 }
 
-async function querySong(song: string, offset: number, limit: number): Promise<Song[]> {
-    const tracks = (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items || []
-    return Promise.all(tracks.map(trackToSong))
-}
 
 const searchCache = db.collection<{
     str: string,
@@ -154,13 +159,15 @@ export async function querySpotify(searchText: string, searchIndex = 0): Promise
     } else if (result && result.validUntil > Date.now() && result.end) {
         return undefined
     } else {
+        if(result) await searchCache.deleteMany({ str: searchText })
+
         const songN = await querySong(searchText, result?.results.length || 0, searchIndex + 5)
         const song = [...(result?.results || []), ...songN]
         await searchCache.insertOne({
             str: searchText,
             results: song,
             end: songN.length == 0,
-            validUntil: Date.now() + 5 * 60 * 1000
+            validUntil: Date.now() + 1000 * 60 * 60 * 24
         })
         if (song.length <= searchIndex) return undefined
         return song[searchIndex]

@@ -88,7 +88,7 @@ export class SongMessage {
     }
 
     public async updateMessage() {
-        logger.debug("Updating message")
+        // logger.debug("Updating message")
         let text: string
         let keyboard: InlineKeyboardButton[][] = []
         const song = await this.getSong()
@@ -167,8 +167,9 @@ export class SongMessage {
     }
 
     private cancelAddToQueue() {
-        logger.info("Removing from queue")
+        logger.info("Stopping Timeout")
         clearTimeout(this.queueTimeout)
+        this.queueTimeout = undefined
         this.updateMessage()
     }
 
