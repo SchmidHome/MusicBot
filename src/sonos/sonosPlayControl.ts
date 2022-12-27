@@ -23,7 +23,7 @@ export async function getPlayingState(): Promise<boolean> {
     logger.log("getPlayingState()")
     const state = await (await device()).AVTransportService.GetTransportInfo()
     logger.debug(state)
-    return state.CurrentTransportState === "PLAYING"
+    return state.CurrentTransportState === "now"
 }
 
 export async function addNextSpotifyUri(uri: string): Promise<void> {

@@ -11,7 +11,7 @@ import { User } from "./user";
 const logger = new ConsoleLogger("QueueElement")
 
 export type votedType = "star" | "up" | "down"
-export type positionType = "new" | number | "next" | "playing" | "played"
+export type positionType = "new" | number | "next" | "now" | "played"
 
 function isVotedType(value: string): value is votedType {
     return value === "star" || value === "up" || value === "down"
@@ -32,7 +32,7 @@ export class QueueElement {
     private static queue: { [id: string]: QueueElement } = {}
 
     static async getPlaying() {
-        let element = await this.queueCollection.findOne({ position: "playing" })
+        let element = await this.queueCollection.findOne({ position: "now" })
         if (!element) return undefined
         return this.getQueueElement(element._id)
     }
@@ -45,7 +45,7 @@ export class QueueElement {
         return this.getQueueElement(element._id)
     }
     static async getQueue() {
-        let elements = await this.queueCollection.find({ position: { $gt: 0 } }).sort({ position: 1 }).toArray()
+        let elements = await this.queueCollection.find({ position: { $gte: 0 } }).sort({ position: 1 }).toArray()
         return Promise.all(elements.map(e => this.getQueueElement(e._id)))
     }
     static async getNextAndQueue() {
@@ -110,6 +110,7 @@ export class QueueElement {
             await element.setPlayStartTime(new Date(time - faderTime))
             time += (await element.getSong()).duration_ms - faderTime
         }
+        this.updateAllMessages()
     }
 
     static async getQueueElement(id: ObjectId) {
@@ -135,7 +136,7 @@ export class QueueElement {
     static async createPlayingQueueElement(spotifyUri: string) {
         const id = (await this.queueCollection.insertOne({
             spotifyUri,
-            position: "playing",
+            position: "now",
             messages: []
         })).insertedId
         return this.getQueueElement(id)
@@ -205,7 +206,7 @@ export class QueueElement {
     public getPositionString() {
         let atString = this.playStartTime ? " (at " + this.playStartTime.toLocaleString() + ")" : ""
         switch (this.position) {
-            case "playing":
+            case "now":
                 return "Now playing:"
             case "played":
                 return "Played" + atString + ":"
@@ -218,8 +219,8 @@ export class QueueElement {
     public async getSong() {
         return await getSong(this.spotifyUri)
     }
-    public async getSongString() {
-        return songToString(await this.getSong())
+    public async getSongString(withImage: boolean) {
+        return songToString(await this.getSong(), withImage)
     }
     public getVotesString() {
         let text = ""
@@ -231,8 +232,21 @@ export class QueueElement {
             text += "👎 " + this.votes.down + " "
         return text
     }
+    public async getDjString() {
+        let dj = await this.getDj()
+        if (dj) {
+            return "Queued by " + dj.name
+        }
+        return undefined
+    }
     public async getString() {
-        return this.getPositionString() + "\n" + this.getVotesString() + "\n" + await this.getSongString()
+        const djStr = await this.getDjString()
+        const votesStr = this.getVotesString()
+        return this.getPositionString() + "\n"
+            + (votesStr ? votesStr + "\n" : "")
+            + (djStr ? djStr + "\n" : "")
+            + "\n"
+            + await this.getSongString(this.position !== "played")
     }
 
     public async updateQueueMessages() {
@@ -256,7 +270,7 @@ export class QueueElement {
         text = await this.getString()
 
         // buttons
-        if (this.position !== "playing" && this.position !== "played") {
+        if (this.position !== "now" && this.position !== "played" && this.position !== "next") {
             buttons = [[
                 {
                     text: "⭐️",
@@ -282,8 +296,8 @@ export class QueueElement {
                     buttons[0][2].text = "[👎]"
                     break
             }
-            await editMessage(msg.chatId, msg.messageId, text, buttons)
         }
+        await editMessage(msg.chatId, msg.messageId, text, buttons)
     }
     public async createQueueMessage(chatId: number) {
         let newMsg = {

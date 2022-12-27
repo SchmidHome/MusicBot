@@ -167,8 +167,8 @@ export async function querySpotify(searchText: string, searchIndex = 0): Promise
     }
 }
 
-export function songToString(song: Song) {
-    return `*${song?.name}*\n${song?.artist}\n${song?.imageUri}`
+export function songToString(song: Song, withSongImage: boolean) {
+    return `*${song?.name}*\n${song?.artist}` + (withSongImage ? `\n${song?.imageUri}` : "")
 }
 
 // ############################################## MAIN

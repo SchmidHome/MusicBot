@@ -78,6 +78,10 @@ export class SongMessage {
     ) {
         SongMessage.songMessages[this.dbSongMessage.messageId] = this
     }
+    private delete() {
+        delete SongMessage.songMessages[this.dbSongMessage.messageId]
+        return SongMessage.songMessageCollection.deleteOne({ messageId: this.dbSongMessage.messageId })
+    }
 
     public getSong() {
         return querySpotify(this.dbSongMessage.searchText, this.dbSongMessage.searchIndex)
@@ -90,13 +94,18 @@ export class SongMessage {
         const song = await this.getSong()
         if (this.dbSongMessage.queueElementId) {
             // Already in Queue
-            let queueElement = await QueueElement.getQueueElement(this.dbSongMessage.queueElementId)
-            text = await queueElement.getString()
+            try {
+                let queueElement = await QueueElement.getQueueElement(this.dbSongMessage.queueElementId)
+                text = await queueElement.getString()
+            } catch (error) {
+                await this.delete()
+                return
+            }
 
         } else if (this.queueTimeout !== undefined) {
             // Adding to Queue
             if (!song) throw new Error("Trying to add song to queue, but no song found")
-            text = "Adding to queue...\n" + songToString(song)
+            text = "Adding to queue...\n" + songToString(song, true)
             keyboard = [[
                 { text: "Cancel", callback_data: `songMessage:${this.dbSongMessage.messageId}:cancel` }
             ]]
@@ -121,7 +130,7 @@ export class SongMessage {
                 }
             } else {
                 if (!song) throw new Error("Trying to add song to queue, but no song found")
-                text = songToString(song)
+                text = songToString(song, true)
                 if (this.dbSongMessage.searchIndex == 0) { keyboard[0].shift() }
             }
         }

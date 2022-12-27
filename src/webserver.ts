@@ -35,7 +35,7 @@ export default function startExpress() {
                     artist: song.artist,
                     coverURL: song.imageUri,
                     songDurationMs: song.duration_ms,
-                    startDate: e.playStartTime || new Date(), //TODO
+                    startDate: e.playStartTime,
                     dj: (await e.getDj())?.name || "",
                 }
             }));
@@ -47,19 +47,16 @@ export default function startExpress() {
         if (!playing) return res.status(404).send()
 
         const song = await playing.getSong()
+
         const currentTrack: ApiPlayingElement = {
             name: song.name,
             artist: song.artist,
             coverURL: song.imageUri,
             songDurationMs: song.duration_ms,
-            endDate: new Date((playing.playStartTime || new Date()).getMilliseconds() + song.duration_ms), //TODO
+            startDate: playing.playStartTime,
             dj: (await playing.getDj())?.name || "",
         }
-        const positionInTrack = new Date(Date.now() - (playing.playStartTime || new Date()).getMilliseconds())
-        res.json({
-            currentTrack,
-            positionInTrack
-        });
+        res.json(currentTrack);
     })
 
     app.get("/lyrics", async (_, res) => {
@@ -78,7 +75,7 @@ interface ApiQueueElement {
     artist: string,
     coverURL: string,
     songDurationMs: number,
-    startDate: Date,
+    startDate?: Date,
     dj: string,
 }
 
@@ -87,6 +84,6 @@ interface ApiPlayingElement {
     artist: string,
     coverURL: string,
     songDurationMs: number,
-    endDate: Date,
+    startDate?: Date,
     dj: string,
 }

@@ -10,7 +10,7 @@ import { SongMessage } from "../classes/songMessage";
 import { QueueElement } from "../classes/queueElement";
 import { ObjectId } from "mongodb";
 
-export const logger = new ConsoleLogger("telegramHelper")
+export const logger = new ConsoleLogger("telegram")
 
 export function log(user: User, command: string, message?: string) {
     logger.log(user.toString() + " used " + command + (message ? ": " + message : ""))
@@ -88,12 +88,12 @@ export async function sendMessage(chatId: ChatId, text: string, keyboard: Telegr
 
 export async function editMessage(chat_id: number, message_id: number, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<boolean> {
     try {
-        logger.debug("Trying to edit message")
+        // logger.debug("Trying to edit message")
         await bot.editMessageText(text, { chat_id, message_id, parse_mode: "Markdown", reply_markup: { inline_keyboard: keyboard } })
         return true
     } catch (error) {
         try {
-            logger.debug("Trying to edit message reply markup")
+            // logger.debug("Trying to edit message reply markup")
             await bot.editMessageReplyMarkup({ inline_keyboard: keyboard }, { chat_id, message_id })
             return true
         } catch (error: any) {
@@ -112,7 +112,7 @@ export function registerCommands() {
         { command: "volume", description: "See and set the volume" },
         // { command: "queue", description: "See the queue" },
         // { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
-        // { command: "playing", description: "See the currently playing song" },
+        // { command: "now", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },
     ], {
@@ -126,7 +126,7 @@ export function registerCommands() {
         { command: "volume", description: "See and set the volume" },
         // { command: "queue", description: "See the queue" },
         // { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
-        // { command: "playing", description: "See the currently playing song" },
+        // { command: "now", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },
     ], {

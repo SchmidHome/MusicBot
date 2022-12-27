@@ -10,10 +10,7 @@ import startExpress from "./webserver"
 startExpress()
 registerCommands()
 
-
 const logger = new ConsoleLogger("index")
-
-
 
 async function checkPlaying() {
     const playingState = await getPlayingState()
@@ -37,7 +34,7 @@ async function checkPlaying() {
 
         const next = await QueueElement.getNext()
         if (next && next.spotifyUri === playing.spotifyUri) {
-            await next.setPosition("playing")
+            await next.setPosition("now")
             logger.log("new Song is playing, is next")
             return
         } else if (next) {
@@ -48,7 +45,7 @@ async function checkPlaying() {
         const queue = await QueueElement.getQueue()
         const queueElement = queue.find(e => e.spotifyUri === playing.spotifyUri)
         if (queueElement) {
-            await queueElement.setPosition("playing")
+            await queueElement.setPosition("now")
             logger.log("new Song is playing, found in queue")
             return
         }
@@ -59,7 +56,7 @@ async function checkPlaying() {
     } else {
         // same Song is playing, update time
         await playingElement.setPlayStartTime(playing.startDate)
-        logger.log("same Song is playing, update time to " + playing.startDate + "")
+        // logger.log("same Song is playing, update time to " + playing.startDate + "")
         await QueueElement.updateTime()
 
         // find next or set new one
