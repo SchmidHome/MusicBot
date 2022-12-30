@@ -1,3 +1,4 @@
+import { SonosDevice } from "@svrooij/sonos/lib"
 import { device, logger, sonosToSpotifyUri } from "./sonos"
 
 function timeStringToSeconds(time: string): number {
@@ -5,48 +6,73 @@ function timeStringToSeconds(time: string): number {
     return hours * 3600 + minutes * 60 + seconds
 }
 
-export async function getPlaying(): Promise<{ spotifyUri: string, startDate: Date } | undefined> {
+async function getState(d: SonosDevice) {
+    const state = await d.AVTransportService.GetTransportInfo()
+    return state.CurrentTransportState
+}
+async function getPositionInfo(d: SonosDevice) {
+    const info = await d.AVTransportService.GetPositionInfo()
+    return {
+        uri: sonosToSpotifyUri(info.TrackURI),
+        secondsInTrack: timeStringToSeconds(info.RelTime),
+        track: info.Track - 1,
+    }
+}
+
+async function getQueue(d: SonosDevice) {
+    const queue = await (await d.GetQueue()).Result
+    if (typeof queue === "string") {
+        logger.warn(`getQueue() returned string: ${queue}`)
+        return []
+    }
+    return queue.map((track) => sonosToSpotifyUri(track.TrackUri!))
+}
+
+function removeFromQueue(d: SonosDevice, index: number) {
+    return d.AVTransportService.RemoveTrackFromQueue({ InstanceID: 0, ObjectID: `Q:0/${index + 1}`, UpdateID: 0 })
+}
+
+export async function getPlaying(): Promise<{
+    now: { spotifyUri: string, startDate: Date }
+    next?: { spotifyUri: string }
+} | "PAUSED" | undefined> {
     logger.log("getPlayingSpotifyUri()")
     const d = await device()
     try {
-        let info = await d.AVTransportService.GetPositionInfo()
-        return {
-            spotifyUri: sonosToSpotifyUri(info.TrackURI),
-            startDate: new Date(Date.now() - Number(timeStringToSeconds(info.RelTime) * 1000))
+        // let info = await d.AVTransportService
+        const state = await getState(d)
+        if (state !== "PLAYING") return "PAUSED"
+        const info = await getPositionInfo(d)
+        const queue = await getQueue(d)
+
+        const now = {
+            spotifyUri: info.uri,
+            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000))
         }
+        let next = undefined
+        if (queue.length > info.track + 1) {
+            next = {
+                spotifyUri: queue[info.track + 1]
+            }
+            if (queue.length > info.track + 2) {
+                // purge unwanted tracks
+                try {
+                    for (let i = queue.length - 1; i > info.track + 1; i--)
+                        await removeFromQueue(d, i)
+                } catch (error) {
+                    logger.error(`Error removing tracks from queue: ${error}`)
+                }
+            }
+        }
+
+        return { now, next }
     } catch (error) {
         return undefined
     }
 }
 
-export async function getPlayingState(): Promise<boolean> {
-    logger.log("getPlayingState()")
-    const state = await (await device()).AVTransportService.GetTransportInfo()
-    logger.debug(state)
-    return state.CurrentTransportState === "now"
-}
-
-export async function addNextSpotifyUri(uri: string): Promise<void> {
+export async function applyNextSpotifyUri(uri: string): Promise<void> {
     logger.log(`addNextSpotifyUri(${uri})`)
-    await (await device()).AddUriToQueue(uri)
+    const d = await device()
+    await d.AddUriToQueue(uri)
 }
-
-
-
-// export async function playLastSong(): Promise<boolean> {
-//     logger.log("playLastSong()")
-//     const d = await device()
-//     const posInfo = await d.AVTransportService.GetPositionInfo()
-
-
-//     await d.AVTransportService.Seek({
-//         InstanceID: 0,
-//         Unit: "TRACK_NR",
-//         Target: String(posInfo.Track - 1)
-//     })
-//     await d.AVTransportService.Play({
-//         InstanceID: 0,
-//         Speed: "1"
-//     })
-//     return true
-// }

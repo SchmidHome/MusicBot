@@ -36,6 +36,7 @@ export default function startExpress() {
                     artist: song.artist,
                     coverURL: song.imageUri,
                     songDurationMs: song.duration_ms,
+                    voteSummary: typeof e.position === "number" ? e.voteSummary : null,
                     startDate: e.playStartTime,
                     dj: (await e.getDj())?.name || "",
                 }
@@ -73,6 +74,7 @@ export default function startExpress() {
 
 interface ApiQueueElement {
     name: string,
+    voteSummary: number | null,
     artist: string,
     coverURL: string,
     songDurationMs: number,

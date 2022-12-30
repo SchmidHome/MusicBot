@@ -72,8 +72,8 @@ export class QueueElement {
         let startPos = next ? 0 : 1
 
         elements = elements.sort((a, b) => {
-            let aVotes = a.votes.star * 2 + a.votes.up - a.votes.down
-            let bVotes = b.votes.star * 2 + b.votes.up - b.votes.down
+            let aVotes = a.voteSummary
+            let bVotes = b.voteSummary
             if (aVotes === bVotes) {
                 if (typeof a.position === "number" && typeof b.position === "number") {
                     return a.position - b.position
@@ -109,7 +109,7 @@ export class QueueElement {
             await element.setPlayStartTime(new Date(time - faderTime))
             time += (await element.getSong()).duration_ms - faderTime
         }
-        // this.updateAllMessages()
+        this.updateAllMessages()
     }
 
     static async getQueueElement(id: ObjectId) {
@@ -120,6 +120,7 @@ export class QueueElement {
                 throw new Error("Queue element not found")
             }
             element = new QueueElement(dbElement)
+            await element.save()
         }
         return element
     }
@@ -206,6 +207,10 @@ export class QueueElement {
             return votes
         }, { star: 0, up: 0, down: 0 })
     }
+    get voteSummary() {
+        const votes = this.votes
+        return votes.star * 2 + votes.up - votes.down
+    }
 
     public getPositionString() {
         let atString = this.playStartTime ? " (at " + this.playStartTime.toLocaleString() + ")" : ""
@@ -216,8 +221,10 @@ export class QueueElement {
                 return "Played" + atString + ":"
             case "new":
                 return "New song queued!"
+            case "next":
+                return "Up next:"
             default:
-                return "Position " + this.position + atString + ":"
+                return "Position " + (this.position + 1) + atString + ":"
         }
     }
     public async getSong() {
@@ -254,13 +261,12 @@ export class QueueElement {
     }
 
     private async updateQueueMessages() {
-        if (!this.changed) return
-        this.changed = false
-        logger.debug("Updating queue messages for " + (await this.getSong()).name)
+        // logger.debug("Updating queue messages for " + (await this.getSong()).name)
         let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
         for (let chatId of chatIds) {
             const msg = this.dbElement.messages.find(m => m.chatId === chatId)
             if (msg) {
+                if (!this.changed) continue
                 await this.updateQueueMessage(msg)
             } else {
                 if (typeof this.position === "number") {
@@ -268,6 +274,7 @@ export class QueueElement {
                 }
             }
         }
+        this.changed = false
     }
     private async updateQueueMessage(msg: DbQueueMessage) {
         // logger.debug("Updating queue message for chat " + msg.chatId)
@@ -318,8 +325,13 @@ export class QueueElement {
 
     public async updateMessages() {
         // logger.debug("Updating queue element messages")
-        if (this.dbElement.djChatId)
-            await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
+        if (this.dbElement.djChatId) {
+            try {
+                await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
+            } catch (e) {
+                logger.error("Error updating song message: " + e)
+            }
+        }
         await this.updateQueueMessages()
     }
 
@@ -334,7 +346,8 @@ export class QueueElement {
             queueElement.voted = vote
         }
         await this.save()
-        await this.updateMessages()
+        this.changed = true
+        await this.updateQueueMessage(queueElement)
     }
 
     public async receivedCallbackData(msgId: number, data: string) {
@@ -350,4 +363,4 @@ setTimeout(() => {
 
 setInterval(() => {
     QueueElement.sortQueue()
-}, 1000 * 10)
+}, 1000 * 5)

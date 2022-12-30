@@ -1,14 +1,16 @@
-import TelegramBot, { ChatId } from "node-telegram-bot-api";
+import TelegramBot from "node-telegram-bot-api";
 import { User } from "../classes/user";
 import { TELEGRAM_TOKEN } from "../config";
 import { ConsoleLogger } from "../logger";
 import * as userMessage from "./userMessage";
 import * as playlistMessage from "./playlistMessage";
 import * as volumeMessage from "./volumeMessage";
-import { assertIsNotUndefined } from "../helper";
+import { assertIsNotUndefined, isEqual } from "../helper";
 import { SongMessage } from "../classes/songMessage";
 import { QueueElement } from "../classes/queueElement";
 import { ObjectId } from "mongodb";
+import { db } from "../mongodb";
+import { Cached } from "../types";
 
 export const logger = new ConsoleLogger("telegram")
 
@@ -78,40 +80,49 @@ bot.on("callback_query", async (query) => {
     }
 })
 
-export async function sendMessage(chatId: ChatId, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<number> {
-    return (await bot.sendMessage(chatId, text, {
+type telegramMessage = {
+    chatId: number,
+    messageId: number,
+    text: string,
+    keyboard: TelegramBot.InlineKeyboardButton[][]
+}
+
+const messageCache = db.collection<telegramMessage>("telegramMessageCache")
+
+export async function sendMessage(chatId: number, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<number> {
+    const messageId = (await bot.sendMessage(chatId, text, {
         parse_mode: "Markdown", reply_markup: {
             inline_keyboard: keyboard
         }
     })).message_id
+    await messageCache.insertOne({ chatId, messageId, text, keyboard })
+    return messageId
 }
 
 export async function editMessage(chat_id: number, message_id: number, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<boolean> {
+    const message = await messageCache.findOne({ chatId: chat_id, messageId: message_id })
+    if (!message) throw new Error("Message not found in cache")
+
     try {
-        // logger.debug("Trying to edit message")
-        await bot.editMessageText(text, { chat_id, message_id, parse_mode: "Markdown", reply_markup: { inline_keyboard: keyboard } })
-        return true
-    } catch (error) {
-        try {
-            // logger.debug("Trying to edit message reply markup")
+        if(message.text !== text ) {
+            await bot.editMessageText(text, { chat_id, message_id, parse_mode: "Markdown", reply_markup: { inline_keyboard: keyboard } })
+        } else if (!isEqual(message.keyboard, keyboard)) {
             await bot.editMessageReplyMarkup({ inline_keyboard: keyboard }, { chat_id, message_id })
-            return true
-        } catch (error: any) {
-            if (error?.response?.body?.description?.startsWith("Bad Request: message is not modified")) {
-                return false
-            } else {
-                logger.error("Error while editing message", error)
-                return false
-            }
+        } else {
+            return false
         }
+    } catch (error) {
+        logger.error("Error while editing message: " + error)
     }
+    messageCache.updateOne({ chatId: chat_id, messageId: message_id }, { $set: { text, keyboard } })
+    return true
 }
 
 export function registerCommands() {
     bot.setMyCommands([
         { command: "volume", description: "See and set the volume" },
         // { command: "queue", description: "See the queue" },
-        // { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
+        { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
         // { command: "now", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },
@@ -125,7 +136,7 @@ export function registerCommands() {
     bot.setMyCommands([
         { command: "volume", description: "See and set the volume" },
         // { command: "queue", description: "See the queue" },
-        // { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
+        { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
         // { command: "now", description: "See the currently playing song" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },

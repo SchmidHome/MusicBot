@@ -37,3 +37,47 @@ export function assertIsMatch(match: RegExpExecArray | null): asserts match is R
 export function between(min: number, max: number) {
     return Math.floor(Math.random() * (max - min) + min);
 }
+
+export function isEqual(a: any, b: any): boolean {
+    switch (typeof a) {
+        case "boolean":
+        case "bigint":
+        case "number":
+        case "string":
+        case "undefined":
+            return a === b;
+        case "function":
+            // eslint-disable-next-line
+            if (typeof b === "function") return a == b;
+            return false;
+        case "object":
+            if (a === null || a === undefined || b === null || b === undefined) {
+                return b === a;
+            }
+            if (Array.isArray(a)) {
+                if (!Array.isArray(b) || a.length !== b.length) return false;
+                return !a.some((ele, index) => !isEqual(ele, b[index]));
+            }
+            if (a instanceof Date) {
+                if (!(b instanceof Date)) return false;
+                return a.getTime() === b.getTime();
+            }
+
+            if (
+                Array.isArray(b) ||
+                (typeof b === "object" &&
+                    "getTime" in b &&
+                    typeof b?.getTime === "function") ||
+                b === undefined ||
+                b === null
+            )
+                return false;
+
+            return isEqual(
+                // sort keys
+                Object.entries(a).sort((a, b) => (a[0] > b[0] ? 1 : -1)),
+                Object.entries(b).sort((a, b) => (a[0] > b[0] ? 1 : -1))
+            );
+    }
+    return false;
+}
