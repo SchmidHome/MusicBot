@@ -84,7 +84,7 @@ export class QueueElement {
     static async sortQueue() {
         let next = await this.getNext()
         let elements = [...await this.getQueue(), ...await this.getNew()]
-        let startPos = next ? 0 : 1
+        let startPos = next ? 1 : 0
 
         elements = elements.sort((a, b) => {
             let aVotes = a.voteSummary
@@ -228,16 +228,16 @@ export class QueueElement {
     }
 
     public getPositionString() {
-        let atString = this.playStartTime ? " (at " + this.playStartTime.toLocaleString() + ")" : ""
+        let atString = this.playStartTime ? " um " + this.playStartTime.toLocaleTimeString() : ""
         switch (this.position) {
             case "now":
-                return "Now playing:"
+                return "Jetzt:"
             case "played":
-                return "Played" + atString + ":"
+                return "Bereits" + atString + " gespielt:"
             case "new":
-                return "New song queued!"
+                return "Neuer Song:"
             case "next":
-                return "Up next:"
+                return "Als nächstes:"
             default:
                 return "Position " + (this.position + 1) + atString + ":"
         }
@@ -261,7 +261,7 @@ export class QueueElement {
     public async getDjString() {
         let dj = await this.getDj()
         if (dj) {
-            return "Queued by " + dj.name
+            return "Hinzugefügt von " + dj.name
         }
         return undefined
     }

@@ -103,22 +103,22 @@ export class User {
     // message templates
 
     sendAlreadyRegisteredMessage() {
-        return sendMessage(this.chatId, `You are already registered, ${this.name}!`)
+        return sendMessage(this.chatId, `Du bist schon registriert, ${this.name}!`)
     }
     sendNotRegisteredMessage() {
-        return sendMessage(this.chatId, `You are not registered!\nPlease register with /start _your name_`)
+        return sendMessage(this.chatId, `Du bist noch nicht registriert!\nBitte registriere dich mit /start _dein name_`)
     }
     sendNotDjMessage() {
-        return sendMessage(this.chatId, `You are not a DJ!`)
+        return sendMessage(this.chatId, `Du bist kein DJ!`)
     }
     sendNotAdminMessage() {
-        return sendMessage(this.chatId, `You are not an admin!`)
+        return sendMessage(this.chatId, `Du bist kein Admin!`)
     }
 
     sendWelcomeUnknownMessage() {
-        return sendMessage(this.chatId, `Welcome to the DJ Bot!\nPlease register with /start _your name_`)
+        return sendMessage(this.chatId, `Willkommen beim DJ Bot!\nBitte registriere dich mit /start _dein name_`)
     }
     sendWelcomeUserMessage() {
-        return sendMessage(this.chatId, `Welcome ${this.name}!`)
+        return sendMessage(this.chatId, `Willkommen, ${this.name}!`)
     }
 }

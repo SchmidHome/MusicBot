@@ -26,7 +26,7 @@ bot.on("error", (err) => {
 })
 
 bot.onText(/^\/start *$/, userMessage.start)
-bot.onText(/^\/start (\S+) *$/, userMessage.register)
+bot.onText(/^\/start (\S\S.+) *$/, userMessage.register)
 bot.onText(/\/state/, userMessage.getState)
 
 bot.onText(/^\/playlist *$/, playlistMessage.selectPlaylist)
@@ -134,12 +134,12 @@ export function registerCommands() {
     })
 
     bot.setMyCommands([
-        { command: "volume", description: "See and set the volume" },
+        { command: "volume", description: "Sieh und ändere die Lautstärke" },
         // { command: "queue", description: "See the queue" },
-        { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
+        { command: "playlist", description: "Sieh oder ändere die aktive Playlist, füge neue hinzu mit /playlist <uri> <name>" },
         // { command: "now", description: "See the currently playing song" },
-        { command: "state", description: "Get your current state" },
-        { command: "start", description: "Login to your Bot" },
+        { command: "state", description: "Sieh deinen aktuellen Status" },
+        { command: "start", description: "Melde dich an" },
     ], {
         scope: {
             type: "all_private_chats"

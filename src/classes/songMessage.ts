@@ -105,35 +105,34 @@ export class SongMessage {
         } else if (this.queueTimeout !== undefined) {
             // Adding to Queue
             if (!song) throw new Error("Trying to add song to queue, but no song found")
-            text = "Adding to queue...\n" + songToString(song, true)
+            text = "Wird zur Queue hinzugefügt...\n" + songToString(song, true)
             keyboard = [[
-                { text: "Cancel", callback_data: `songMessage:${this.dbSongMessage.messageId}:cancel` }
+                { text: "Abbrechen", callback_data: `songMessage:${this.dbSongMessage.messageId}:cancel` }
             ]]
         } else {
             // Not in Queue
             keyboard = [
                 [
-                    { text: "Previous", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex - 1}` },
-                    { text: "Next", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex + 1}` }
+                    { text: "Zurück", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex - 1}` },
+                    { text: "Weiter", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex + 1}` }
                 ],
-                [{ text: "Add to queue", callback_data: `songMessage:${this.dbSongMessage.messageId}:add` }]
+                [{ text: "Hinzufügen", callback_data: `songMessage:${this.dbSongMessage.messageId}:add` }]
             ]
             if (!song) {
                 if (this.dbSongMessage.searchIndex > 0) {
-                    text = "No more results"
+                    text = "Keine weiteren Ergebnisse."
                     keyboard = [[
-                        { text: "Previous", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex - 1}` }
+                        { text: "Zurück", callback_data: `songMessage:${this.dbSongMessage.messageId}:${this.dbSongMessage.searchIndex - 1}` }
                     ]]
                 } else {
-                    text = "No results"
+                    text = "Keine Ergebnisse gefunden."
                     keyboard = []
                 }
             } else {
                 text = songToString(song, true)
                 if (this.dbSongMessage.searchIndex == 0) { keyboard[0].shift() }
                 if (await QueueElement.songPlayedRecently(song)) {
-                    keyboard[1][0].text = "Song played recently"
-                    keyboard[1][0].callback_data = ""
+                    keyboard[1][0].text = "Song wurde kürzlich gespielt."
                 }
             }
         }
@@ -156,6 +155,14 @@ export class SongMessage {
 
     private queueTimeout: NodeJS.Timeout | undefined
     private async addToQueue() {
+        const song = await this.getSong()
+        if (!song) throw new Error("Trying to add song that doesn't exist")
+        if (await QueueElement.songPlayedRecently(song)) {
+            // abort
+            await this.updateMessage()
+            return
+        }
+
         this.queueTimeout = setTimeout(async () => {
             this.queueTimeout = undefined
 

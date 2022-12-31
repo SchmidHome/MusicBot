@@ -15,7 +15,7 @@ export async function selectPlaylist(msg: TelegramBot.Message) {
         const buttons = playlists.map((playlist) => {
             return { "text": playlist.name, "callback_data": "playlist:" + playlist.name }
         })
-        let msgText = `Current playlist:\n*${(await getActiveBackgroundPlaylist())?.name}*`
+        let msgText = `Aktuelle playlist:\n*${(await getActiveBackgroundPlaylist())?.name}*`
 
         let msgSent = await sendMessage(user.chatId, msgText, user.state == 'admin' ? buttons.map(v => [v]) : [[]])
 
@@ -44,9 +44,9 @@ export async function addPlaylist(msg: TelegramBot.Message, match: RegExpExecArr
             assertIsNotNull(playlist)
             await addBackgroundPlaylist(name, uri)
             await selectBackgroundPlaylist(name)
-            await sendMessage(user.chatId, `Added playlist ${name} to background playlists`)
+            await sendMessage(user.chatId, `Playlist *${name}* wurde hinzugefügt und als Hintergrund-playlist ausgewählt`)
         } catch (error) {
-            await sendMessage(user.chatId, "Could not add playlist")
+            await sendMessage(user.chatId, "Playlist konnte nicht hinzugefügt werden")
         }
     } catch (error) {
         console.error(error)
@@ -57,5 +57,5 @@ export async function onPlaylistCallback(user: User, message_id: number, data: s
     log(user, data)
     const name = data.split(":")[1]
     await selectBackgroundPlaylist(name)
-    await editMessage(user.chatId, message_id, `Selected playlist *${name}* as background playlist`, [])
+    await editMessage(user.chatId, message_id, `Playlist *${name}* wurde als Hintergrund-playlist ausgewählt`, [])
 }
