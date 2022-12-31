@@ -72,7 +72,28 @@ export async function getPlaying(): Promise<{
 }
 
 export async function applyNextSpotifyUri(uri: string): Promise<void> {
-    logger.log(`addNextSpotifyUri(${uri})`)
+    logger.log(`applyNextSpotifyUri(${uri})`)
     const d = await device()
-    await d.AddUriToQueue(uri)
+
+    const info = await getPositionInfo(d)
+    const queue = await getQueue(d)
+
+    let purgeEnd = info.track + 1
+
+    // check if next track is added but not the one we want
+    if (queue.length > info.track + 1 && queue[info.track + 1] !== uri) {
+        purgeEnd = info.track
+    }
+
+    // purge unwanted tracks
+    try {
+        for (let i = queue.length - 1; i > purgeEnd; i--)
+            await removeFromQueue(d, i)
+    } catch (error) {
+        logger.error(`Error removing tracks from queue: ${error}`)
+    }
+
+    // add new track
+    if (queue.length <= info.track + 1 || queue[info.track + 1] !== uri)
+        await d.AddUriToQueue(uri)
 }

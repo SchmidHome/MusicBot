@@ -74,9 +74,9 @@ export function addBackgroundPlaylist(name: string, uri: string) {
     })
 }
 
-export async function selectBackgroundPlaylist(name: string) {
+export async function selectBackgroundPlaylist(name: string | null) {
     await backgroundPlaylists.updateMany({}, { $set: { selected: false } })
-    await backgroundPlaylists.updateOne({ name }, { $set: { selected: true } })
+    await backgroundPlaylists.updateOne(name ? { name } : {}, { $set: { selected: true } })
 }
 
 // ############################################## CONVERT/FIND
@@ -159,7 +159,7 @@ export async function querySpotify(searchText: string, searchIndex = 0): Promise
     } else if (result && result.validUntil > Date.now() && result.end) {
         return undefined
     } else {
-        if(result) await searchCache.deleteMany({ str: searchText })
+        if (result) await searchCache.deleteMany({ str: searchText })
 
         const songN = await querySong(searchText, result?.results.length || 0, searchIndex + 5)
         const song = [...(result?.results || []), ...songN]
@@ -200,7 +200,7 @@ export async function getSongFromDefaultPlaylist() {
         const song = await getNewTrack(playlist.songs)
         if (song == undefined) {
             logger.warn(`No new track found in ${playlist.name}`)
-            selectBackgroundPlaylist("Johannes Partymix")//!
+            selectBackgroundPlaylist(null)
             return
         }
         return song
