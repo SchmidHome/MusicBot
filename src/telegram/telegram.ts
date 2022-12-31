@@ -32,7 +32,7 @@ bot.onText(/\/state/, userMessage.getState)
 bot.onText(/^\/playlist *$/, playlistMessage.selectPlaylist)
 bot.onText(/^\/playlist (https:\/\/open\.spotify\.com\/playlist\/\S*) (.*)$/, playlistMessage.addPlaylist)
 
-bot.onText(/\/volume/, volumeMessage.changeVolume)
+bot.onText(/\/volume/, volumeMessage.showVolume)
 
 
 
