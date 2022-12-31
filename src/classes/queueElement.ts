@@ -7,6 +7,7 @@ import { SongMessage } from "./songMessage";
 import { editMessage, sendMessage } from "../telegram/telegram";
 import { Song } from "../types";
 import { User } from "./user";
+import { BLACKLIST } from "../config";
 
 const logger = new ConsoleLogger("QueueElement")
 
@@ -61,6 +62,10 @@ export class QueueElement {
     }
 
     static async songPlayedRecently(song: Song) {
+
+        // check blacklist
+        if (BLACKLIST.includes(song.spotifyUri.split(":", 3)[2])) return true
+
         let elements = await this.queueCollection.find({ spotifyUri: song.spotifyUri }).toArray()
         if (elements.length === 0) return false
 

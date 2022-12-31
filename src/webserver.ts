@@ -46,7 +46,7 @@ export default function startExpress() {
 
     app.get("/playing", async (_, res) => {
         const playing = await QueueElement.getPlaying()
-        if (!playing) return res.send(null)
+        if (!playing) return res.status(404).send("nothing playing")
 
         const song = await playing.getSong()
 
@@ -63,7 +63,7 @@ export default function startExpress() {
 
     app.get("/lyrics", async (_, res) => {
         const playing = await QueueElement.getPlaying()
-        if (!playing) return res.status(404).send()
+        if (!playing) return res.status(404).send("nothing playing")
 
         const lyrics = await getLyrics(playing.spotifyUri);
         res.json(lyrics);
@@ -72,7 +72,7 @@ export default function startExpress() {
     app.listen(3000, () => logger.log("Started and listening on port 3000."))
 }
 
-interface ApiQueueElement {
+type ApiQueueElement = {
     name: string,
     voteSummary: number | null,
     artist: string,
@@ -82,11 +82,11 @@ interface ApiQueueElement {
     dj: string,
 }
 
-interface ApiPlayingElement {
+type ApiPlayingElement = {
     name: string,
     artist: string,
     coverURL: string,
     songDurationMs: number,
     startDate?: Date,
     dj: string,
-}
+} | "nothing playing"
