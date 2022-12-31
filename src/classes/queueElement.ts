@@ -111,7 +111,7 @@ export class QueueElement {
         if (!playing) return
         if (!playing.playStartTime) return
 
-        let time = playing.playStartTime.getTime() + (await playing.getSong()).duration_ms - (faderTime / 2)
+        let time = playing.playStartTime.getTime() + (await playing.getSong()).duration_ms + faderTime / 2
 
         let next = await this.getNext()
         if (next) {
