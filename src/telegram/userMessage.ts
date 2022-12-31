@@ -47,7 +47,7 @@ async function updateAdminMessage(user: User, messageId: number | null) {
 
     const users = (await Promise.all((await User.getAllRegisteredUserIds()).map(id => User.getUser(id)))).filter(u => u.state === "user" || u.state === "dj")
     const buttons: TelegramBot.InlineKeyboardButton[][] = users.map(user => {
-        const text = user.name || user.chatId.toString()
+        const text = `${user.name!}: ${user.state}`
         return [{
             text: text,
             callback_data: `user:${user.chatId}`
