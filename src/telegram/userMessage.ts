@@ -43,19 +43,19 @@ export async function getState(msg: TelegramBot.Message) {
 
         switch (user.state) {
             case 'unknown':
-                sendMessage(user.chatId, "You are not registered!")
+                await sendMessage(user.chatId, "Du bist nicht registriert!")
                 break
             case "user":
-                sendMessage(user.chatId, "You are a user!")
+                await sendMessage(user.chatId, "Du bist registriert!")
                 break
             case "dj":
-                sendMessage(user.chatId, "You are a dj!")
+                await sendMessage(user.chatId, "Du bist ein DJ!")
                 break
             case 'admin':
-                sendMessage(user.chatId, "You are an admin!")
+                await sendMessage(user.chatId, "Die Macht ist mit dir!")
                 break
             default:
-                sendMessage(user.chatId, "This should not have happened!")
+                await sendMessage(user.chatId, "Das hätte nicht passieren dürfen!")
                 throw new Error("Unknown state: " + user.state)
         }
     } catch (error) {

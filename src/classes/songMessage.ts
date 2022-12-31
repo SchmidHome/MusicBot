@@ -41,7 +41,7 @@ export class SongMessage {
     }
     static async createSongMessage(chatId: number, searchText: string) {
         let dbSongMessage: DbSongMessage = {
-            messageId: await sendMessage(chatId, "Searching..."),
+            messageId: await sendMessage(chatId, "Suche läuft..."),
             chatId,
             searchText,
             searchIndex: 0

@@ -3,14 +3,30 @@ import { User } from "../classes/user"
 import { getVolume, setVolume } from "../sonos/sonosVolumeControl"
 import { editMessage, log, logger, sendMessage } from "./telegram"
 
-async function updateVolumeMessage(user: User, messageId: number, volume: number) {
-    const msg = await sendMessage(user.chatId, "Volume: " + volume)
+const timer: { [messageId: number]: NodeJS.Timeout | undefined } = {}
 
-    await editMessage(user.chatId, msg, "Volume: " + volume,
-        [[
-            { "text": "Decrease", "callback_data": `volume:-` },
-            { "text": "Increase", "callback_data": `volume:+` }
-        ]])
+async function updateVolumeMessage(user: User, messageId: number | null, volume: number) {
+    if (!messageId) {
+        messageId = await sendMessage(user.chatId, "Lautstärke: " + volume)
+    }
+
+    for (const [_id, t] of [...Object.entries(timer), [messageId, undefined]]) {
+        const id = Number(_id)
+        clearTimeout(t)
+        await editMessage(user.chatId, id, "Lautstärke: " + volume,
+            [[
+                { "text": "Leiser", "callback_data": `volume:-` },
+                { "text": "Lauter", "callback_data": `volume:+` }
+            ]])
+
+        // set timeout to delete buttons
+        timer[id] = setTimeout(async () => {
+            await editMessage(user.chatId, id, "Lautstärke: " + volume, [])
+            delete timer[id]
+        }, 1000 * 10)
+    }
+
+    return messageId
 }
 
 function roundNearest5(num: number) {
@@ -23,16 +39,19 @@ export async function changeVolume(msg: TelegramBot.Message) {
         user.checkRegistered()
         user.checkDj()
 
-        const volume = roundNearest5(await getVolume())
+        let volume = roundNearest5(await getVolume())
 
-        const msgId = await sendMessage(user.chatId, "Volume: " + volume)
-        updateVolumeMessage(user, msgId, volume)
+        if (msg.text?.endsWith("+")) {
+            volume += 5
+        } else if (msg.text?.endsWith("-")) {
+            volume -= 5
+        }
 
-        // set timeout to delete buttons
-        setTimeout(async () => {
-            await editMessage(user.chatId, msgId, "Volume: " + volume, [])
-        }, 1000 * 10)
+        volume = Math.max(0, Math.min(100, volume))
 
+        await setVolume(volume)
+
+        await updateVolumeMessage(user, null, volume)
     } catch (error) {
         console.error(error)
     }

@@ -330,7 +330,7 @@ export class QueueElement {
     }
     private async createQueueMessage(chatId: number) {
         let newMsg = {
-            messageId: await sendMessage(chatId, "New Song added!"),
+            messageId: await sendMessage(chatId, "Neuer Song hinzugefügt!"),
             chatId,
         }
         this.dbElement.messages.push(newMsg)

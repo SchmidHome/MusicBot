@@ -121,9 +121,9 @@ export async function editMessage(chat_id: number, message_id: number, text: str
 export function registerCommands() {
     bot.setMyCommands([
         { command: "volume", description: "See and set the volume" },
-        // { command: "queue", description: "See the queue" },
         { command: "playlist", description: "See or set the active playlist, add new one with /playlist <uri> <name>" },
-        // { command: "now", description: "See the currently playing song" },
+        // { command: "playing", description: "See the currently playing song" },
+        // { command: "queue", description: "See the queue" },
         { command: "state", description: "Get your current state" },
         { command: "start", description: "Login to your Bot" },
     ], {
@@ -135,9 +135,9 @@ export function registerCommands() {
 
     bot.setMyCommands([
         { command: "volume", description: "Sieh und ändere die Lautstärke" },
-        // { command: "queue", description: "See the queue" },
         { command: "playlist", description: "Sieh oder ändere die aktive Playlist, füge neue hinzu mit /playlist <uri> <name>" },
-        // { command: "now", description: "See the currently playing song" },
+        // { command: "playing", description: "See the currently playing song" },
+        // { command: "queue", description: "See the queue" },
         { command: "state", description: "Sieh deinen aktuellen Status" },
         { command: "start", description: "Melde dich an" },
     ], {
