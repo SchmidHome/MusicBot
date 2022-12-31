@@ -46,7 +46,7 @@ export default function startExpress() {
 
     app.get("/playing", async (_, res) => {
         const playing = await QueueElement.getPlaying()
-        if (!playing) return res.status(404).send()
+        if (!playing) return res.send(null)
 
         const song = await playing.getSong()
 
