@@ -1,6 +1,6 @@
 import { QueueElement } from "./classes/queueElement"
 import { ConsoleLogger } from "./logger"
-import { applyNextSpotifyUri, getPlaying } from "./sonos/sonosPlayControl"
+import { applyNextSpotifyUri, getPlaying, getPlayingState } from "./sonos/sonosPlayControl"
 import { getSongFromDefaultPlaylist } from "./spotify"
 import { registerCommands } from "./telegram/telegram"
 import startExpress from "./webserver"
@@ -11,14 +11,11 @@ registerCommands()
 const logger = new ConsoleLogger("index")
 
 async function checkPlaying() {
+    const state = await getPlayingState()
     const playing = await getPlaying()
     if (!playing) {
         // nothing is playing
         logger.log("nothing is playing")
-        return
-    } else if (playing === "PAUSED") {
-        // paused
-        logger.log("paused")
         return
     }
 
@@ -60,8 +57,8 @@ async function checkPlaying() {
     // check next
     let nextElement = await QueueElement.getNext()
 
-    // check if next exists and the last 60 seconds are playing
-    if (!nextElement && playing.now.startDate.getTime() + playing.now.duration_s * 1000 - Date.now() < 60 * 1000) {
+    // check if next exists and the last 60 seconds are playing or music is paused
+    if (!nextElement && (playing.now.startDate.getTime() + playing.now.duration_s * 1000 - Date.now() < 60 * 1000 || !state)) {
         // set new next
         const queue = await QueueElement.getQueue()
         if (queue.length > 0) {
@@ -87,3 +84,7 @@ async function checkPlaying() {
 
 setTimeout(checkPlaying, 1 * 1000)
 setInterval(checkPlaying, 10 * 1000)
+
+//TODO fix double message sending
+
+//TODO allow rename

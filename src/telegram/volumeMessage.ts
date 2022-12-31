@@ -3,28 +3,31 @@ import { User } from "../classes/user"
 import { getVolume, setVolume } from "../sonos/sonosVolumeControl"
 import { editMessage, log, logger, sendMessage } from "./telegram"
 
-const timer: { [messageId: number]: NodeJS.Timeout | undefined } = {}
+const timer: { [messageId: number]: { chatId: number, timer: NodeJS.Timeout | undefined } } = {}
 
 async function updateVolumeMessage(user: User, messageId: number | null, volume: number) {
     if (!messageId) {
         messageId = await sendMessage(user.chatId, "Lautstärke: " + volume)
     }
-    timer[messageId] ??= undefined
+    timer[messageId] ??= { chatId: user.chatId, timer: undefined }
 
     for (const [_id, t] of Object.entries(timer)) {
-        const id = Number(_id)
-        clearTimeout(t)
-        await editMessage(user.chatId, id, "Lautstärke: " + volume,
+        const msgId = Number(_id)
+        clearTimeout(t.timer)
+        await editMessage(t.chatId, msgId, "Lautstärke: " + volume,
             [[
                 { "text": "Leiser", "callback_data": `volume:-` },
                 { "text": "Lauter", "callback_data": `volume:+` }
             ]])
 
         // set timeout to delete buttons
-        timer[id] = setTimeout(async () => {
-            await editMessage(user.chatId, id, "Lautstärke: " + volume, [])
-            delete timer[id]
-        }, 1000 * 10)
+        timer[msgId] = {
+            chatId: t.chatId,
+            timer: setTimeout(async () => {
+                await editMessage(user.chatId, msgId, "Lautstärke: " + volume, [])
+                delete timer[msgId]
+            }, 1000 * 10)
+        }
     }
 
     return messageId

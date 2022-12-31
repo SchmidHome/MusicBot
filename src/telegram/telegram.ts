@@ -66,6 +66,8 @@ bot.on("callback_query", async (query) => {
         } else if (query.data.startsWith("playlist:")) {
             user.checkAdmin()
             await playlistMessage.onPlaylistCallback(user, query.message!.message_id, query.data)
+        } else if (query.data.startsWith("user:")) {
+            await userMessage.onStateChangeCallback(user, query.message!.message_id, query.data)
         } else if (query.data.startsWith("songMessage:")) {
             const [_, songMessageId, task] = query.data.split(":")
             const songMessage = await SongMessage.getSongMessage(parseInt(songMessageId))
@@ -96,26 +98,30 @@ export async function sendMessage(chatId: number, text: string, keyboard: Telegr
         }
     })).message_id
     await messageCache.insertOne({ chatId, messageId, text, keyboard })
+    logger.log(`${messageId} created`)
     return messageId
 }
 
-export async function editMessage(chat_id: number, message_id: number, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<boolean> {
+export async function editMessage(chat_id: number, message_id: number, text: string, keyboard: TelegramBot.InlineKeyboardButton[][] = []): Promise<"UNCHANGED" | "MODIFIED" | false> {
     const message = await messageCache.findOne({ chatId: chat_id, messageId: message_id })
     if (!message) throw new Error("Message not found in cache")
 
     try {
-        if(message.text !== text ) {
+        if (message.text !== text) {
             await bot.editMessageText(text, { chat_id, message_id, parse_mode: "Markdown", reply_markup: { inline_keyboard: keyboard } })
         } else if (!isEqual(message.keyboard, keyboard)) {
             await bot.editMessageReplyMarkup({ inline_keyboard: keyboard }, { chat_id, message_id })
         } else {
-            return false
+            return "UNCHANGED"
         }
+        messageCache.updateOne({ chatId: chat_id, messageId: message_id }, { $set: { text, keyboard } })
+        logger.log(`${message_id} modified`)
+        return "MODIFIED"
     } catch (error) {
-        logger.error("Error while editing message: " + error)
+        messageCache.updateOne({ chatId: chat_id, messageId: message_id }, { $set: { text, keyboard } })
+        logger.error(`${message_id} Error while editing message: ${error}`)
+        return false
     }
-    messageCache.updateOne({ chatId: chat_id, messageId: message_id }, { $set: { text, keyboard } })
-    return true
 }
 
 export function registerCommands() {

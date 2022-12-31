@@ -33,23 +33,26 @@ function removeFromQueue(d: SonosDevice, index: number) {
     return d.AVTransportService.RemoveTrackFromQueue({ InstanceID: 0, ObjectID: `Q:0/${index + 1}`, UpdateID: 0 })
 }
 
+export async function getPlayingState(): Promise<boolean> {
+    logger.log("getPlayingState()")
+    const d = await device()
+    const state = await getState(d)
+    return state === "PLAYING"
+}
+
 export async function getPlaying(): Promise<{
     now: { spotifyUri: string, startDate: Date, duration_s: number }
     next?: { spotifyUri: string }
-} | "PAUSED" | undefined> {
+} | undefined> {
     logger.log("getPlayingSpotifyUri()")
     const d = await device()
     try {
-        // let info = await d.AVTransportService
-        const state = await getState(d)
-        if (state !== "PLAYING") return "PAUSED"
         const info = await getPositionInfo(d)
         const queue = await getQueue(d)
 
-        const PLAY_OFFSET = 5 * 1000
         const now = {
             spotifyUri: info.uri,
-            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000) + PLAY_OFFSET),
+            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000)),
             duration_s: info.duration_s
         }
         let next = undefined
