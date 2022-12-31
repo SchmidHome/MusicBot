@@ -179,7 +179,6 @@ export class SongMessage {
             this.dbSongMessage.queueElementId = e.id
             await this.save()
             await this.updateMessage()
-            await e.updateMessages()
         }, 10 * 1000)
         this.updateMessage()
     }

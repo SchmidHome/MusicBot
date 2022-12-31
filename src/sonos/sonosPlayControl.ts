@@ -1,4 +1,5 @@
 import { SonosDevice } from "@svrooij/sonos/lib"
+import { PLAYING_OFFSET_MS } from "../config"
 import { device, logger, sonosToSpotifyUri } from "./sonos"
 
 function timeStringToSeconds(time: string): number {
@@ -47,12 +48,14 @@ export async function getPlaying(): Promise<{
     logger.log("getPlayingSpotifyUri()")
     const d = await device()
     try {
+        const s_now = Date.now()
         const info = await getPositionInfo(d)
         const queue = await getQueue(d)
 
+        const offset = Number(PLAYING_OFFSET_MS) || 0
         const now = {
             spotifyUri: info.uri,
-            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000)),
+            startDate: new Date(s_now - info.secondsInTrack * 1000 + offset),
             duration_s: info.duration_s
         }
         let next = undefined

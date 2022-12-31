@@ -12,7 +12,7 @@ import { BLACKLIST } from "../config";
 const logger = new ConsoleLogger("QueueElement")
 
 export type votedType = "star" | "up" | "down"
-export type positionType = "new" | number | "next" | "now" | "played"
+export type positionType = "new" | number | "next" | "now" | "played" | "removed"
 
 function isVotedType(value: string): value is votedType {
     return value === "star" || value === "up" || value === "down"
@@ -31,8 +31,6 @@ type DbQueueElement = OptionalId<{
 export class QueueElement {
     private static queueCollection = collection<DbQueueElement>("queueElements")
     private static queue: { [id: string]: QueueElement } = {}
-
-    changed = true
 
     static async getPlaying() {
         let element = await this.queueCollection.findOne({ position: "now" })
@@ -66,6 +64,7 @@ export class QueueElement {
         // check blacklist
         if (BLACKLIST.includes(song.spotifyUri.split(":", 3)[2])) return true
 
+        // check last played
         let elements = await this.queueCollection.find({ spotifyUri: song.spotifyUri }).toArray()
         if (elements.length === 0) return false
 
@@ -76,8 +75,10 @@ export class QueueElement {
                 if (element.playStartTime && element.playStartTime.getTime() + 1000 * 60 * 60 * 2 > now.getTime()) {
                     return true
                 }
+            } else if (element.position === "removed") {
+                // ignore removed songs
             } else {
-                // in queue or playing, return true
+                // in queue, playing, return true
                 return true
             }
         }
@@ -200,7 +201,6 @@ export class QueueElement {
         if (this.position == position) return
         logger.debug(`Setting position of ${(await this.getSong()).name} to ${position}`)
         this.dbElement.position = position
-        this.changed = true
         await this.save()
     }
 
@@ -211,7 +211,6 @@ export class QueueElement {
         if (this.playStartTime && Math.abs(this.playStartTime.getTime() - playTime.getTime()) < 1000) return
         logger.debug(`Setting playStartTime of ${(await this.getSong()).name} to ${playTime}`)
         this.dbElement.playStartTime = playTime
-        this.changed = true
         await this.save()
     }
 
@@ -243,6 +242,8 @@ export class QueueElement {
                 return "Neuer Song:"
             case "next":
                 return "Als nächstes:"
+            case "removed":
+                return "Von Admin entfernt:"
             default:
                 return "Position " + (this.position + 1) + atString + ":"
         }
@@ -286,7 +287,6 @@ export class QueueElement {
         for (let chatId of chatIds) {
             const msg = this.dbElement.messages.find(m => m.chatId === chatId)
             if (msg) {
-                if (!this.changed) continue
                 await this.updateQueueMessage(msg)
             } else {
                 if (typeof this.position === "number") {
@@ -294,12 +294,12 @@ export class QueueElement {
                 }
             }
         }
-        this.changed = false
     }
     private async updateQueueMessage(msg: DbQueueMessage) {
         // logger.debug("Updating queue message for chat " + msg.chatId)
         let text: string
         let buttons: InlineKeyboardButton[][] = []
+        let user = await User.getUser(msg.chatId)
 
         text = await this.getString()
 
@@ -329,6 +329,12 @@ export class QueueElement {
                 case "down":
                     buttons[0][2].text = "[👎]"
                     break
+            }
+            if (user.isAdmin()) {
+                buttons[0].push({
+                    text: "❌",
+                    callback_data: `queueMessage:${this.id}:${msg.messageId}:remove`
+                })
             }
         }
         await editMessage(msg.chatId, msg.messageId, text, buttons)
@@ -366,13 +372,16 @@ export class QueueElement {
             queueElement.voted = vote
         }
         await this.save()
-        this.changed = true
         await this.updateQueueMessage(queueElement)
     }
 
     public async receivedCallbackData(msgId: number, data: string) {
         if (isVotedType(data)) {
             await this.changeVote(msgId, data)
+        } else if (data === "remove") {
+            if (this.position !== "now" && this.position !== "played" && this.position !== "next") {
+                await this.setPosition("removed")
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ export const SPOTIFY_CLIENT_ID = CONFIG("SPOTIFY_CLIENT_ID")
 export const SPOTIFY_CLIENT_SECRET = CONFIG("SPOTIFY_CLIENT_SECRET")
 export const SONOS_DEVICE_NAME = CONFIG("SONOS_DEVICE_NAME")
 export const SONOS_DEVICE_IP = CONFIG("SONOS_DEVICE_IP")
+export const PLAYING_OFFSET_MS = CONFIG("PLAYING_OFFSET_MS")
 
 export const BLACKLIST = (process.env.BLACKLIST || "").split(",").map(e => e.trim()).filter(e => e.length > 0)
 

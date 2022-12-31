@@ -57,8 +57,8 @@ async function checkPlaying() {
     // check next
     let nextElement = await QueueElement.getNext()
 
-    // check if next exists and the last 60 seconds are playing or music is paused
-    if (!nextElement && (playing.now.startDate.getTime() + playing.now.duration_s * 1000 - Date.now() < 60 * 1000 || !state)) {
+    // check if next exists and the last 90 seconds are playing or music is paused
+    if (!nextElement && (playing.now.startDate.getTime() + playing.now.duration_s * 1000 - Date.now() < 90 * 1000 || !state)) {
         // set new next
         const queue = await QueueElement.getQueue()
         if (queue.length > 0) {
@@ -78,13 +78,19 @@ async function checkPlaying() {
 
     if (nextElement && nextElement.spotifyUri !== playing.next?.spotifyUri) {
         // set new next
-        applyNextSpotifyUri(nextElement.spotifyUri)
+        await applyNextSpotifyUri(nextElement.spotifyUri)
     }
 }
 
-setTimeout(checkPlaying, 1 * 1000)
-setInterval(checkPlaying, 10 * 1000)
+setTimeout(checkPlaying, 2 * 1000)
+setInterval(checkPlaying, 20 * 1000)
 
 //TODO fix double message sending
 
 //TODO allow rename
+
+//TODO fix no songs in Sonos bug
+
+//TODO only work with playing when song is not paused
+
+//TODO find song by url
