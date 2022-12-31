@@ -60,7 +60,8 @@ async function checkPlaying() {
     // check next
     let nextElement = await QueueElement.getNext()
 
-    if (!nextElement) { //TODO when 60 seconds left on song
+    // check if next exists and the last 60 seconds are playing
+    if (!nextElement && playing.now.startDate.getTime() + playing.now.duration_s * 1000 - Date.now() < 60 * 1000) {
         // set new next
         const queue = await QueueElement.getQueue()
         if (queue.length > 0) {
@@ -78,7 +79,7 @@ async function checkPlaying() {
         await nextElement.setPosition("next")
     }
 
-    if (nextElement.spotifyUri !== playing.next?.spotifyUri) {
+    if (nextElement && nextElement.spotifyUri !== playing.next?.spotifyUri) {
         // set new next
         applyNextSpotifyUri(nextElement.spotifyUri)
     }

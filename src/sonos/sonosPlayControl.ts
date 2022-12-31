@@ -14,8 +14,9 @@ async function getPositionInfo(d: SonosDevice) {
     const info = await d.AVTransportService.GetPositionInfo()
     return {
         uri: sonosToSpotifyUri(info.TrackURI),
-        secondsInTrack: timeStringToSeconds(info.RelTime),
         track: info.Track - 1,
+        secondsInTrack: timeStringToSeconds(info.RelTime),
+        duration_s: timeStringToSeconds(info.TrackDuration)
     }
 }
 
@@ -33,7 +34,7 @@ function removeFromQueue(d: SonosDevice, index: number) {
 }
 
 export async function getPlaying(): Promise<{
-    now: { spotifyUri: string, startDate: Date }
+    now: { spotifyUri: string, startDate: Date, duration_s: number }
     next?: { spotifyUri: string }
 } | "PAUSED" | undefined> {
     logger.log("getPlayingSpotifyUri()")
@@ -45,9 +46,11 @@ export async function getPlaying(): Promise<{
         const info = await getPositionInfo(d)
         const queue = await getQueue(d)
 
+        const PLAY_OFFSET = 5 * 1000
         const now = {
             spotifyUri: info.uri,
-            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000))
+            startDate: new Date(Date.now() - Number(info.secondsInTrack * 1000) + PLAY_OFFSET),
+            duration_s: info.duration_s
         }
         let next = undefined
         if (queue.length > info.track + 1) {
@@ -78,22 +81,14 @@ export async function applyNextSpotifyUri(uri: string): Promise<void> {
     const info = await getPositionInfo(d)
     const queue = await getQueue(d)
 
-    let purgeEnd = info.track + 1
-
-    // check if next track is added but not the one we want
-    if (queue.length > info.track + 1 && queue[info.track + 1] !== uri) {
-        purgeEnd = info.track
-    }
-
     // purge unwanted tracks
     try {
-        for (let i = queue.length - 1; i > purgeEnd; i--)
+        for (let i = queue.length - 1; i > info.track; i--)
             await removeFromQueue(d, i)
     } catch (error) {
         logger.error(`Error removing tracks from queue: ${error}`)
     }
 
     // add new track
-    if (queue.length <= info.track + 1 || queue[info.track + 1] !== uri)
-        await d.AddUriToQueue(uri)
+    await d.AddUriToQueue(uri)
 }
