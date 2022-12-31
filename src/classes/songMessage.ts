@@ -129,9 +129,12 @@ export class SongMessage {
                     keyboard = []
                 }
             } else {
-                if (!song) throw new Error("Trying to add song to queue, but no song found")
                 text = songToString(song, true)
                 if (this.dbSongMessage.searchIndex == 0) { keyboard[0].shift() }
+                if (await QueueElement.songPlayedRecently(song)) {
+                    keyboard[1][0].text = "Song played recently"
+                    keyboard[1][0].callback_data = ""
+                }
             }
         }
         await editMessage(this.dbSongMessage.chatId, this.dbSongMessage.messageId, text, keyboard)
@@ -154,9 +157,17 @@ export class SongMessage {
     private queueTimeout: NodeJS.Timeout | undefined
     private async addToQueue() {
         this.queueTimeout = setTimeout(async () => {
+            this.queueTimeout = undefined
+
             logger.info("Adding to queue")
             const song = await this.getSong()
             if (!song) throw new Error("Trying to add song that doesn't exist")
+            if (await QueueElement.songPlayedRecently(song)) {
+                // abort
+                await this.updateMessage()
+                return
+            }
+            // add to queue
             const e = await QueueElement.createNewQueueElement(this.chatId, song.spotifyUri)
             this.dbSongMessage.queueElementId = e.id
             await this.save()

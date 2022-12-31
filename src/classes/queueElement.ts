@@ -61,7 +61,22 @@ export class QueueElement {
     }
 
     static async songPlayedRecently(song: Song) {
-        //TODO
+        let elements = await this.queueCollection.find({ spotifyUri: song.spotifyUri }).toArray()
+        if (elements.length === 0) return false
+
+        let now = new Date()
+        for (let element of elements) {
+            if (element.position === "played") {
+                // check if played in the last 2 hours
+                if (element.playStartTime && element.playStartTime.getTime() + 1000 * 60 * 60 * 2 > now.getTime()) {
+                    return true
+                }
+            } else {
+                // in queue or playing, return true
+                return true
+            }
+        }
+
         //TODO check similar titles
         return false
     }
