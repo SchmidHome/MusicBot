@@ -10,7 +10,10 @@ registerCommands()
 
 const logger = new ConsoleLogger("index")
 
+let nextCounter = 0
 async function checkPlaying() {
+
+
     const state = await getPlayingState()
     const playing = await getPlaying()
     if (!playing) {
@@ -18,6 +21,8 @@ async function checkPlaying() {
         logger.log("nothing is playing")
         return
     }
+
+    await QueueElement.sortQueue()
 
     // check playing
     let playingElement = await QueueElement.getPlaying()
@@ -76,14 +81,18 @@ async function checkPlaying() {
         await nextElement.setPosition("next")
     }
 
+    if (nextCounter > 0) nextCounter--
     if (nextElement && nextElement.spotifyUri !== playing.next?.spotifyUri) {
         // set new next
-        await applyNextSpotifyUri(nextElement.spotifyUri)
+        if (nextCounter === 0) {
+            nextCounter = 4
+            await applyNextSpotifyUri(nextElement.spotifyUri)
+        }
     }
 }
 
 setTimeout(checkPlaying, 2 * 1000)
-setInterval(checkPlaying, 20 * 1000)
+setInterval(checkPlaying, 5 * 1000)
 
 //TODO fix double message sending
 

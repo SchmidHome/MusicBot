@@ -157,7 +157,7 @@ export class SongMessage {
     private async addToQueue() {
         const song = await this.getSong()
         if (!song) throw new Error("Trying to add song that doesn't exist")
-        if (await QueueElement.songPlayedRecently(song)) {
+        if (await QueueElement.songPlayedRecently(song) && !(await User.getUser(this.chatId)).isAdmin()) {
             // abort
             await this.updateMessage()
             return
@@ -169,7 +169,7 @@ export class SongMessage {
             logger.info("Adding to queue")
             const song = await this.getSong()
             if (!song) throw new Error("Trying to add song that doesn't exist")
-            if (await QueueElement.songPlayedRecently(song)) {
+            if (await QueueElement.songPlayedRecently(song) && !(await User.getUser(this.chatId)).isAdmin()) {
                 // abort
                 await this.updateMessage()
                 return

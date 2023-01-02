@@ -1,8 +1,9 @@
-out
 node_modules
+out
 logs
-.vscode
-package-lock.json
-.env
 data
+
+.env
+
+package-lock.json
 yarn-error.log

@@ -108,7 +108,6 @@ export class QueueElement {
         })
 
         await Promise.all(elements.map((e, i) => e.setPosition(startPos + i)))
-        await this.updateTime()
     }
     static async updateTime() {
         const faderTime = 1000 * 12
@@ -152,6 +151,7 @@ export class QueueElement {
             position: "new",
             messages: []
         })).insertedId
+        logger.log(`Created new queue element ${id}`)
         return this.getQueueElement(id)
     }
     static async createPlayingQueueElement(spotifyUri: string) {
@@ -174,12 +174,6 @@ export class QueueElement {
         return QueueElement.queueCollection.updateOne({ _id: this.id }, { $set: this.dbElement })
     }
 
-    static async updateAllMessages() {
-        let allElements = await this.queueCollection.find({}).toArray()
-        for (let { _id } of allElements) {
-            (await this.getQueueElement(_id)).updateMessages()
-        }
-    }
 
     private constructor(
         private dbElement: WithId<DbQueueElement>
@@ -199,7 +193,7 @@ export class QueueElement {
     }
     async setPosition(position: positionType) {
         if (this.position == position) return
-        logger.debug(`Setting position of ${(await this.getSong()).name} to ${position}`)
+        logger.log(`Setting position of ${(await this.getSong()).name} to ${position}`)
         this.dbElement.position = position
         await this.save()
     }
@@ -209,7 +203,7 @@ export class QueueElement {
     }
     async setPlayStartTime(playTime: Date) {
         if (this.playStartTime && Math.abs(this.playStartTime.getTime() - playTime.getTime()) < 1000) return
-        logger.debug(`Setting playStartTime of ${(await this.getSong()).name} to ${playTime}`)
+        logger.log(`Setting playStartTime of ${(await this.getSong()).name} to ${playTime}`)
         this.dbElement.playStartTime = playTime
         await this.save()
     }
@@ -281,22 +275,8 @@ export class QueueElement {
             + await this.getSongString(this.position !== "played")
     }
 
-    private async updateQueueMessages() {
-        // logger.debug("Updating queue messages for " + (await this.getSong()).name)
-        let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
-        for (let chatId of chatIds) {
-            const msg = this.dbElement.messages.find(m => m.chatId === chatId)
-            if (msg) {
-                await this.updateQueueMessage(msg)
-            } else {
-                if (typeof this.position === "number") {
-                    await this.createQueueMessage(chatId)
-                }
-            }
-        }
-    }
     private async updateQueueMessage(msg: DbQueueMessage) {
-        // logger.debug("Updating queue message for chat " + msg.chatId)
+        // logger.log("Updating queue message for chat " + msg.chatId)
         let text: string
         let buttons: InlineKeyboardButton[][] = []
         let user = await User.getUser(msg.chatId)
@@ -340,17 +320,43 @@ export class QueueElement {
         await editMessage(msg.chatId, msg.messageId, text, buttons)
     }
     private async createQueueMessage(chatId: number) {
+        logger.debug("Creating new queue message " + (await this.getSong()).name + " for chat " + chatId)
         let newMsg = {
             messageId: await sendMessage(chatId, "Neuer Song hinzugefügt!"),
             chatId,
         }
         this.dbElement.messages.push(newMsg)
+        logger.debug("Created new queue message " + (await this.getSong()).name, this.dbElement.messages)
+        logger.trace("At")
         await this.save()
         await this.updateQueueMessage(newMsg)
     }
 
+    private async updateQueueMessages() {
+        let chatIds = (await User.getAllRegisteredUserIds()).filter(u => u != this.dbElement.djChatId)
+        // logger.log("Updating queue messages for " + (await this.getSong()).name + " in chats " + chatIds)
+        for (let chatId of chatIds) {
+            const msg = this.dbElement.messages.find(m => m.chatId === chatId)
+            if (msg) {
+                await this.updateQueueMessage(msg)
+            } else {
+                if (typeof this.position === "number") {
+                    await this.createQueueMessage(chatId)
+                }
+            }
+        }
+    }
+
+    static async updateAllMessages() {
+        logger.debug("Updating all queue element messages")
+        let allElements = await this.queueCollection.find({}).toArray()
+        for (let { _id } of allElements) {
+            (await this.getQueueElement(_id)).updateMessages()
+        }
+    }
+
     public async updateMessages() {
-        // logger.debug("Updating queue element messages")
+        // logger.log("Updating queue element messages")
         if (this.dbElement.djChatId) {
             try {
                 await (await SongMessage.getFromQueueElementId(this.dbElement._id)).updateMessage()
@@ -361,35 +367,28 @@ export class QueueElement {
         await this.updateQueueMessages()
     }
 
-    private async changeVote(msgId: number, vote: "star" | "up" | "down") {
-        let queueElement = this.dbElement.messages.find(m => m.messageId === msgId)
-        if (!queueElement) {
-            throw new Error("Queue element not found")
-        }
-        if (queueElement.voted === vote) {
-            queueElement.voted = undefined
+    private async changeVote(queueMsg: DbQueueMessage, vote: "star" | "up" | "down") {
+        if (queueMsg.voted === vote) {
+            queueMsg.voted = undefined
         } else {
-            queueElement.voted = vote
+            queueMsg.voted = vote
         }
         await this.save()
-        await this.updateQueueMessage(queueElement)
+        await this.updateQueueMessage(queueMsg)
     }
 
     public async receivedCallbackData(msgId: number, data: string) {
+        let queueMsg = this.dbElement.messages.find(m => m.messageId === msgId)
+        if (!queueMsg) {
+            throw new Error("Queue element not found")
+        }
         if (isVotedType(data)) {
-            await this.changeVote(msgId, data)
+            await this.changeVote(queueMsg, data)
         } else if (data === "remove") {
             if (this.position !== "now" && this.position !== "played" && this.position !== "next") {
                 await this.setPosition("removed")
+                await this.updateMessages()
             }
         }
     }
 }
-
-setTimeout(() => {
-    QueueElement.updateAllMessages()
-}, 1000)
-
-setInterval(() => {
-    QueueElement.sortQueue()
-}, 1000 * 5)

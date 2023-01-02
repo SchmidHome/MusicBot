@@ -175,7 +175,11 @@ export async function querySpotify(searchText: string, searchIndex = 0): Promise
 }
 
 export function songToString(song: Song, withSongImage: boolean) {
-    return `*${song?.name}*\n${song?.artist}` + (withSongImage ? `\n${song?.imageUri}` : "")
+    if(withSongImage) {
+        return "https://open.spotify.com/track/" + song.spotifyUri.split(":", 3)[2]
+    }else {
+        return `*${song?.name}*\n${song?.artist}`
+    }
 }
 
 // ############################################## MAIN
