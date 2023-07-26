@@ -11,6 +11,8 @@ import { BLACKLIST } from "../config";
 
 const logger = new ConsoleLogger("QueueElement")
 
+const queueLogger = new ConsoleLogger("Queue")
+
 export type votedType = "star" | "up" | "down"
 export type positionType = "new" | number | "next" | "now" | "played" | "removed"
 
@@ -347,9 +349,42 @@ export class QueueElement {
         }
     }
 
-    static async updateAllMessages() {
-        logger.debug("Updating all queue element messages")
+    static async logQueue() {
         let allElements = await this.queueCollection.find({}).toArray()
+
+        // print full queue
+        let playing = await QueueElement.getPlaying()
+        let next = await QueueElement.getNext()
+        let queue = await QueueElement.getQueue()
+
+        function songToStr(T: string, song: Pick<Song, "name" | "duration_ms">, time: Date = new Date()) {
+            // "<T> <time>-<time+duration> <name> | "
+            const NAME_LEN = 30
+            const endTime = new Date(time.getTime() + song.duration_ms)
+            return `${T} ${(time ? time.toLocaleTimeString() : "?").padEnd(8)}-${endTime.toLocaleTimeString().padStart(8)} ${song.name.slice(0, NAME_LEN).padEnd(NAME_LEN)} | `
+
+        }
+
+        let msg = songToStr("P", playing ? await playing.getSong() : { name: "EMPTY", duration_ms: 0 }, playing?.playStartTime)
+
+        if (next) {
+            msg += songToStr("N", await next.getSong(), next.playStartTime)
+        }
+        for (let i = 0; i < queue.length; i++) {
+            msg += songToStr(String(queue[i].position), await queue[i].getSong(), queue[i].playStartTime)
+        }
+        queueLogger.log(msg)
+    }
+
+    static async updateAllMessages() {
+
+        // delay 100ms
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        let allElements = await this.queueCollection.find({}).toArray()
+        // logger.debug("Updating all queue element messages")
+        await this.logQueue()
+
         for (let { _id } of allElements) {
             (await this.getQueueElement(_id)).updateMessages()
         }

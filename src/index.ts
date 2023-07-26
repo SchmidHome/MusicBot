@@ -13,7 +13,6 @@ const logger = new ConsoleLogger("index")
 let nextCounter = 0
 async function checkPlaying() {
 
-
     const state = await getPlayingState()
     const playing = await getPlaying()
     if (!playing) {
@@ -92,7 +91,7 @@ async function checkPlaying() {
 }
 
 setTimeout(checkPlaying, 2 * 1000)
-setInterval(checkPlaying, 5 * 1000)
+setInterval(checkPlaying, 20 * 1000)
 
 //TODO fix double message sending
 

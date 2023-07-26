@@ -20,8 +20,8 @@ export class ConsoleLogger implements Logger {
     static maxNameLength = 0
 
     public getTime(): string {
-        // HH:MM:SS.mmm
-        return new Date().toISOString().substring(11, 23)
+        // LOCALE HH:MM:SS.mmm
+        return new Date().toLocaleTimeString() + "." + new Date().getMilliseconds().toString().padStart(3, "0")
     }
 
     public readonly filename: string
@@ -31,7 +31,7 @@ export class ConsoleLogger implements Logger {
         this.color = ConsoleLogger.colors.shift() || chalk.whiteBright
         ConsoleLogger.maxNameLength = Math.max(ConsoleLogger.maxNameLength, name.length)
         this.filename = `logs/${name}.ans`
-        writeFile(this.filename, "\n\nSTARTED " + this.getTime() + "\n", () => { })
+        appendFile(this.filename, "\n\nSTARTED " + this.getTime() + "\n", () => { })
     }
 
     public trace(message?: any, ...optionalParams: any[]): void {
