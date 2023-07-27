@@ -13,7 +13,7 @@ export const PositionTypeSchema = z.enum([
 
 
 export const QueueElementSchema = z.object({
-  _id: z.instanceof(ObjectId),
+  _id: z.instanceof(ObjectId).optional(),
   songUri: SongUriSchema,
   type: PositionTypeSchema,
   playStartTime: z.date().optional(),
