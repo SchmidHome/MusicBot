@@ -1,4 +1,4 @@
-import { ConsoleLogger } from "../logger";
+import { ConsoleLogger } from "../lib/logger";
 import { Song } from "../spotify/song";
 import { Player } from "./player";
 

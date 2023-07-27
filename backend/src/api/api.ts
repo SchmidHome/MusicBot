@@ -2,10 +2,11 @@ import Express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import { ConsoleLogger } from "../lib/logger";
+import volumeRouter from "./volume";
 
 const logger = new ConsoleLogger("api");
 
-export const app = Express();
+const app = Express();
 app.use(cors({ origin: "*" }));
 
 app.use(
@@ -16,6 +17,10 @@ app.use(
   })
 );
 
-app.get("/", async (req, res) => res.send("MusicBot V2"));
+app.get("/", async (_, res) => res.send("MusicBot V2"));
 
-app.listen(3000, () => logger.log("Started and listening on port 3000."));
+app.use(volumeRouter);
+
+export function startAPI() {
+  app.listen(3000, () => logger.log("Started and listening on port 3000."));
+}
