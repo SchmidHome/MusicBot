@@ -4,8 +4,7 @@ import { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } from "../lib/config";
 
 export const loggerSpotify = new ConsoleLogger("spotify");
 
-const spotify = new SpotifyWebApi({
+export const spotify = new SpotifyWebApi({
   clientId: SPOTIFY_CLIENT_ID,
   clientSecret: SPOTIFY_CLIENT_SECRET,
 });
-
