@@ -1,9 +1,0 @@
-node_modules
-out
-logs
-data
-
-.env
-
-package-lock.json
-yarn-error.log

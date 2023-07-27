@@ -1,6 +1,19 @@
 
 services:
 
+  frontend:
+    build: ./frontend
+    restart: always
+    # ports:
+    # TODO
+
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+    - 3000:3000
+    
+
   mongo:
     image: mongo
     restart: always
