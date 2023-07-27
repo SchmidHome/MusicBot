@@ -1,5 +1,6 @@
 import z from "zod";
 import { ObjectId } from "mongodb";
+import { SongUriSchema } from "../spotify/song";
 
 export const PositionTypeSchema = z.enum([
   "new", // initial state, not yet queued
@@ -13,9 +14,10 @@ export const PositionTypeSchema = z.enum([
 
 export const QueueElementSchema = z.object({
   _id: z.instanceof(ObjectId),
-  songId: z.instanceof(ObjectId),
-  position: PositionTypeSchema,
-  queuePosition: z.number().min(0).optional(),
+  songUri: SongUriSchema,
+  type: PositionTypeSchema,
+  playStartTime: z.date().optional(),
+  pos: z.number().min(0).optional(),
   addedBy: z.string().optional(),
 });
 
