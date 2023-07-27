@@ -1,12 +1,15 @@
-import z from 'zod'
+import z from "zod";
+
+export const SongUriSchema = z.string().url(); // ID
 
 export const SongSchema = z.object({
-    name: z.string(),
-    artist: z.string(),
-    album: z.string(),
-    imageUri: z.string().url(),
-    spotifyUri: z.string().url(),
-    duration_ms: z.number(),
-})
+  spotifyUri: SongUriSchema,
+  name: z.string(),
+  artist: z.string(),
+  album: z.string(),
+  imageUri: z.string().url(),
+  duration_ms: z.number(),
+});
 
-export type Song = z.infer<typeof SongSchema>
+export type SongUri = z.infer<typeof SongUriSchema>;
+export type Song = z.infer<typeof SongSchema>;
