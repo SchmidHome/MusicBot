@@ -90,7 +90,7 @@
     margin: calc($spacing / 2) 0
     word-break: break-word
     max-width: 100%
-    font-size: 2em
+    font-size: 1.75em
     transition: color 1s, margin 1s
     // &.current~ p
     color: $text-low
@@ -112,7 +112,7 @@
     align-items: center
     justify-content: center
     p
-      font-size: 2em
+      font-size: 1.75em
       color: $text-low
       text-align: center
       margin: 0

@@ -6,8 +6,12 @@
   const qr = urlParams.get("qr");
 
   export let link: string = "";
-  let wrapper: HTMLDivElement;
-  $: src = link || qr || import.meta.env.PUBLIC_DEFAULT_QR_LINK;
+  let wrapper: HTMLButtonElement;
+  $: src =
+    link ||
+    qr ||
+    import.meta.env.PUBLIC_DEFAULT_QR_LINK ||
+    window.location.href;
 
   $: if (wrapper)
     QrCreator.render(
@@ -24,9 +28,10 @@
 </script>
 
 <SquareGrow>
-  <div
+  <button
     class="wrapper"
-    on:click={() => window.open(src, "_blank")}
+    on:click={() => window.open(src, "_self")}
+    on:keydown={() => window.open(src, "_self")}
     bind:this={wrapper}
   />
 </SquareGrow>
@@ -44,6 +49,8 @@
     border-radius: $border-radius
     box-shadow: $shadow
     cursor: pointer
+    outline: none
+    border: none
 
   .wrapper :global(canvas)
     height: 100%

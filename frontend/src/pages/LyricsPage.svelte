@@ -1,7 +1,9 @@
 <script lang="ts">
+  import Back from "assets/back.svelte";
   import Lyrics from "components/Lyrics.svelte";
   import Song from "components/Song.svelte";
   import currentSong from "global/currentSong";
+  import portrait from "global/portrait";
   import queue from "global/queue";
   import { urlParams } from "global/urlParams";
 
@@ -9,14 +11,31 @@
 </script>
 
 <main class="main" class:lyrics>
-  <div class="currentSong">
-    <h1>{$currentSong.name}</h1>
-    <h2>{$currentSong.artist}</h2>
+  <div class="back">
+    <button
+      class="back-btn btn"
+      on:click={() => {
+        window.location.href =
+          window.location.origin + window.location.pathname;
+      }}
+    >
+      <Back height=".9em" width=".9em" />
+      Zurück
+    </button>
   </div>
+
+  {#if !$portrait}
+    <div class="currentSong">
+      <h1>{$currentSong.name}</h1>
+      <h2>{$currentSong.artist}</h2>
+    </div>
+  {/if}
+
   <div class="lyrics">
     <Lyrics />
   </div>
-  {#if $queue.length}
+
+  {#if !$portrait && $queue.length}
     <div class="nextSong">
       <span class="nextSong_label">Nächster Song</span>
       <div class="nextSong_song">
@@ -40,7 +59,25 @@
     grid-template-columns: 1fr 3fr 1fr
     position: relative
     gap: $spacing
+
+    @media (orientation: portrait)
+      grid-template-columns: 1fr
+      grid-template-rows: 1fr
+      grid-template-areas: "lyrics"
+      padding: 0 $spacing
     
+
+  .back
+    position: absolute
+    top: $spacing
+    left: $spacing
+    z-index: 1
+
+    @media (orientation: landscape)
+      top: unset
+      bottom: calc($spacing * 2)
+      left: calc($spacing * 2)
+
   .currentSong, .nextSong
     margin: calc($spacing * 2) 0
     font-size: .8em

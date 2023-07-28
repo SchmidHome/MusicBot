@@ -50,3 +50,18 @@ span
   height: 100vh
   overflow: auto
   box-sizing: border-box
+
+.btn
+  background: $bg-light
+  color: $text
+  outline: none
+  border: 0
+  border-radius: $border-radius
+  padding: calc($spacing / 2) $spacing
+  font-size: 1em
+  transition: background .2s
+  cursor: pointer
+  &:hover
+    background: $bg
+  &:active
+    background: $bg-dark

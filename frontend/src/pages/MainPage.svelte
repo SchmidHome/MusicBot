@@ -25,6 +25,17 @@
         <QrCode />
       </div>
     </div>
+    <div style:grid-area="lyrics">
+      <button
+        class="lyrics-btn btn"
+        on:click={() => {
+          window.location.href =
+            window.location.origin + window.location.pathname + "?lyrics=true";
+        }}
+      >
+        Lyrics
+      </button>
+    </div>
     {#if $connectionError}
       <div class="error">
         <h3>Connection Error</h3>
@@ -68,16 +79,19 @@
     grid-area: header
     display: grid
     grid-template-columns: auto
-    grid-template-rows: 1fr 2fr 2fr
+    grid-template-rows: 1fr 2fr 2fr auto
     align-items: center
     max-height: 100%
     grid-gap: $spacing
     height: 100%
-    grid-template-areas: "time" "logo" "qr"
+    grid-template-areas: "time" "logo" "qr" "lyrics"
     >*
       position: relative
       height: 100%
       width: 100%
+
+  .lyrics-btn
+    width: 100%
 
   .absolute
     position: absolute
