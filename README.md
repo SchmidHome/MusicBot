@@ -8,43 +8,42 @@ npm install --global yarn typescript nodemon pm2
 ## API to Frontend
 
 ```typescript
-type ApiQueueElement = {
-    name: string,
-    voteSummary: number | null,
-    artist: string,
-    coverURL: string,
-    songDurationMs: number,
-    startDate?: Date,
-    dj: string,
-}
-
-type ApiPlayingElement = {
-    name: string,
-    artist: string,
-    coverURL: string,
-    songDurationMs: number,
-    startDate?: Date,
-    dj: string,
-} | "nothing playing"
 
 type ApiSongElement = {
-    name: string,
-    artist: string,
-    coverURL: string,
-    songDurationMs: number,
+    songUri: string;
+    name: string;
+    artist: string;
+    album: string;
+    imageUri: string;
+    duration_ms: number;
+}
+
+type ApiQueueElement = ApiSongElement & {
+    // Element info
+    _id: ObjectId;
+    type: "new" | "queued" | "next" | "now" | "played" | "removed";
+    playStartTime?: Date | undefined;
+    pos?: number | undefined;
+    addedBy?: string | null | undefined;
+}
+
+type ApiPlayingElement = ApiQueueElement & {
+    startDate: Date;
+    type: "now";
+    pos: 0;
 }
 
 ```
 
-| API        | Type   | Request                                    | Response          | Description   |
-| ---------- | ------ | ------------------------------------------ | ----------------- | ------------- |
-| /          | GET    |                                            | MusicBot Vx       | version       |
-| /volume    | GET    |                                            | 0-100             | get volume    |
-| /queue     | GET    |                                            | ApiQueueElement[] | get queue     |
-| /playing   | GET    |                                            | ApiPlayingElement | get playing   |
-| /lyrics    | GET    |                                            | string            | get lyrics    |
-| /volume    | POST   | "+" "-" or 0-100                           | 0-100             | set volume    |
-| /search    | POST   | string                                     | ApiSongElement[]  | search        |
-| /queue     | DELETE | ApiQueueElement                            |                   | remove        |
-| /queueMove | POST   | {song: ApiQueueElement, direction: number} |                   | move in queue |
-| /queue     | POST   | ApiSongElement                             |                   | add to queue  |
+| API        | Type   | Request                                    | Response                       | Description   | Status |
+| ---------- | ------ | ------------------------------------------ | ------------------------------ | ------------- | ------ |
+| /          | GET    |                                            | MusicBot Vx                    | version       | OK     |
+| /volume    | GET    |                                            | 0-100                          | get volume    | OK     |
+| /queue     | GET    |                                            | ApiQueueElement[]              | get queue     | WIP    |
+| /playing   | GET    |                                            | ApiPlayingElement or undefined | get playing   | WIP    |
+| /lyrics    | GET    |                                            | string                         | get lyrics    | -      |
+| /volume    | POST   | "+" "-" or 0-100                           | 0-100                          | set volume    | OK     |
+| /search    | POST   | string                                     | ApiSongElement[]               | search        | -      |
+| /queue     | DELETE | ApiQueueElement                            |                                | remove        | -      |
+| /queueMove | POST   | {song: ApiQueueElement, direction: number} |                                | move in queue | -      |
+| /queue     | POST   | ApiSongElement                             |                                | add to queue  | -      |

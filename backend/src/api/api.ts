@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import { ConsoleLogger } from "../lib/logger";
 import volumeRouter from "./volume";
+import { queueRouter } from "./queue";
 
 export const loggerAPI = new ConsoleLogger("api");
 
@@ -21,6 +22,7 @@ app.use(
 app.get("/", async (_, res) => res.send("MusicBot V2"));
 
 app.use(volumeRouter);
+app.use(queueRouter);
 
 export function startAPI() {
   app.listen(3000, () => loggerAPI.log("Started and listening on port 3000."));

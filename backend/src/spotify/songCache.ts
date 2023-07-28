@@ -10,7 +10,7 @@ export async function getSong(uri: SongUri): Promise<Song> {
   const cachedSong = await songCache.findOne({ songUri: uri });
 
   if (cachedSong && cachedSong.validUntil > Date.now()) {
-    return cachedSong;
+    return SongSchema.parse(cachedSong);
   } else {
     await awaitRequest();
     const id = uri.slice(-22);
@@ -18,7 +18,7 @@ export async function getSong(uri: SongUri): Promise<Song> {
     const track = await spotify.getTrack(id);
 
     const song = await trackToSong(track.body);
-    return song;
+    return SongSchema.parse(song);
   }
 }
 

@@ -4,6 +4,8 @@ import { queueCollection } from "./queue"
 
 export  async function playedRecently(song: Song) {
 
+    //TODO fix
+
     // check blacklist
     if (BLACKLIST.includes(song.songUri.split(":", 3)[2])) return true
 
