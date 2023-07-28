@@ -3,16 +3,16 @@ import { SongUri } from "../spotify/song";
 import { queueCollection } from "./queue";
 import { PositionType } from "./types";
 
-export async function setPlayStartTime(id: ObjectId, time: Date) {
-  queueCollection.updateOne({ _id: id }, { $set: { playStartTime: time } });
+export function setPlayStartTime(id: ObjectId, time: Date) {
+  return queueCollection.updateOne({ _id: id }, { $set: { playStartTime: time } });
 }
 
-export async function setPosition(id: ObjectId, pos: number) {
-  queueCollection.updateOne({ _id: id }, { $set: { pos } });
+export function setPosition(id: ObjectId, pos: number) {
+  return queueCollection.updateOne({ _id: id }, { $set: { pos } });
 }
 
-export async function setType(id: ObjectId, type: PositionType) {
-  queueCollection.updateOne({ _id: id }, { $set: { type } });
+export function setType(id: ObjectId, type: PositionType) {
+  return queueCollection.updateOne({ _id: id }, { $set: { type } });
 }
 
 export async function addSong(songUri: SongUri, addedBy?: string) {

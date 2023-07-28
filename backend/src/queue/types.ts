@@ -11,14 +11,13 @@ export const PositionTypeSchema = z.enum([
   "removed", // removed from queue
 ]);
 
-
 export const QueueElementSchema = z.object({
   _id: z.instanceof(ObjectId).optional(),
   songUri: SongUriSchema,
   type: PositionTypeSchema,
   playStartTime: z.date().optional(),
   pos: z.number().min(0).optional(),
-  addedBy: z.string().optional()
+  addedBy: z.string().or(z.null()).optional(),
 });
 
 export type PositionType = z.infer<typeof PositionTypeSchema>;
