@@ -9,6 +9,7 @@ import {
   setType,
 } from "./queue/setter";
 import { sortQueue, updateTime } from "./queue/sort";
+import { getSongFromBackgroundPlaylist } from "./spotify/backgroundPlaylist";
 import { getSong } from "./spotify/songCache";
 
 startAPI();
@@ -77,7 +78,7 @@ async function checkPlaying() {
       queueNextSong = queue[0];
       logger.log("add next from queue");
     } else {
-      const newSong = await getSongFromDefaultPlaylist();
+      const newSong = await getSongFromBackgroundPlaylist();
       if (!newSong) {
         logger.error("no next, no queue, default playlist empty");
         return;
