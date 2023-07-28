@@ -39,12 +39,12 @@ type ApiPlayingElement = ApiQueueElement & {
 | ---------- | ------ | ------------------------------------------ | ------------------------------ | ------------------------ | ------ |
 | /          | GET    |                                            | MusicBot Vx                    | version                  | OK     |
 | /volume    | GET    |                                            | 0-100                          | get volume               | OK     |
-| /volume    | POST   | "+" "-" or 0-100                           | 0-100                          | set volume               | OK     |
+| /volume    | POST   | { volume: "+" or "-" or 0-100 }            | 0-100                          | set volume               | TEST   |
 | /lyrics    | GET    |                                            | string                         | get lyrics               | -      |
 | /playing   | GET    |                                            | ApiPlayingElement or undefined | get playing              | OK     |
 | /queue     | GET    |                                            | ApiQueueElement[]              | get queue                | OK     |
-| /user      | GET    |                                            | 201:User or 200:{ ip: string } | get user or IP of device | WIP    |
-| /queue     | POST   | ApiSongElement                             |                                | add to queue             | WIP    |
-| /queue     | DELETE | ApiQueueElement                            |                                | remove                   | -      |
-| /search    | POST   | string                                     | ApiSongElement[]               | search                   | -      |
-| /queueMove | POST   | {song: ApiQueueElement, direction: number} |                                | move in queue            | -      |
+| /user      | GET    |                                            | 201:User or 200:{ ip: string } | get user or IP of device | OK     |
+| /queue     | POST   | { songUri: songUri }                       |                                | add to queue             | TEST   |
+| /queue     | DELETE | { _id: ObjectId }                          |                                | remove                   | TEST   |
+| /search    | POST   | { query: string, resultCount: number = 5 } | ApiSongElement[]               | search                   | TEST   |
+| /queueMove | POST   | { _id: ObjectId, direction: number }       |                                | move in queue            | TEST   |

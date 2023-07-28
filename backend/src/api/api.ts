@@ -11,6 +11,7 @@ export const loggerAPI = new ConsoleLogger("api");
 
 const app = Express();
 app.use(cors({ origin: "*" }));
+app.use(Express.json());
 
 app.use(
   morgan("dev", {

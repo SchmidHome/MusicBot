@@ -1,11 +1,12 @@
+import { ObjectId, WithId } from "mongodb";
 import { getSong } from "../spotify/songCache";
-import { getNew, getNext, getPlaying, getQueued } from "./getter";
+import { getNew, getNext, getPlaying, getQueued, getFullQueue } from "./getter";
 import { setPlayStartTime, setPosition } from "./setter";
+import { QueueElement } from "./types";
 
-export async function sortQueue() {
-  let next = await getNext();
-  let elements = [...(await getQueued()), ...(await getNew())];
-  let startPos = next ? 1 : 0;
+export async function sortQueue(elements?: WithId<QueueElement>[]) {
+  //TODO use semaphore
+  if (!elements) elements = [...(await getFullQueue()), ...(await getNew())];
 
   elements = elements.sort((a, b) => {
     if (typeof a.pos === "number" && typeof b.pos === "number") {
@@ -17,7 +18,21 @@ export async function sortQueue() {
     }
   });
 
-  await Promise.all(elements.map((e, i) => setPosition(e._id, startPos + i)));
+  await Promise.all(elements.map((e, i) => setPosition(e._id, i)));
+}
+
+export async function resortQueue(_id: ObjectId, posChange: number) {
+  let elements = [...(await getFullQueue()), ...(await getNew())];
+
+  if (posChange > 0) posChange += 0.5;
+  if (posChange < 0) posChange -= 0.5;
+
+  const changeElement = elements.find((e) => e._id.equals(_id));
+  if (!changeElement || !changeElement.pos) return false;
+  changeElement.pos += posChange;
+
+  await sortQueue(elements);
+  return true;
 }
 
 export async function updateTime() {

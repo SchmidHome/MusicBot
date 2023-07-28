@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { queueCollection } from "./queue";
 
 export function getPlaying() {
@@ -14,6 +15,10 @@ export function getQueued() {
 
 export function getNew() {
   return queueCollection.find({ type: "new" }).toArray();
+}
+
+export function getId(id: string) {
+  return queueCollection.findOne({ _id: new ObjectId(id) });
 }
 
 export function getFullQueue() {
