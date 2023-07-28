@@ -23,7 +23,7 @@ export async function addSong(songUri: SongUri, addedBy?: string) {
     _id: (
       await queueCollection.insertOne({
         songUri,
-        addedBy,
+        addedBy: addedBy ? addedBy : undefined,
         type: "new",
       })
     ).insertedId,

@@ -27,7 +27,7 @@ export async function validateCollection<T extends Document>(collection: Collect
         try {
             schema.parse(data)
         } catch (e) {
-            logger.error(`Invalid data in collection ${collection.collectionName}: ${JSON.stringify(data)}`)
+            logger.error(`Invalid data in collection ${collection.collectionName} id ${data._id}: ${JSON.stringify(e)}`)
             errors++
         }
     })

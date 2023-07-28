@@ -19,8 +19,6 @@ async function checkPlaying() {
   let queuePlayingSong = await getPlaying();
 
   if (now) {
-    // nothing is playing
-    logger.log("nothing is playing");
     if (!queuePlayingSong || queuePlayingSong.songUri !== now.songUri) {
       // new Song is playing
       if (queuePlayingSong) await setType(queuePlayingSong._id, "played");
@@ -106,6 +104,7 @@ async function checkPlaying() {
       }
       await setType(queuePlayingSong._id, "now");
     }
+    await usedPlayer.setNext(queuePlayingSong.songUri);
   }
 }
 

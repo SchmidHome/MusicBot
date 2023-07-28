@@ -2,8 +2,7 @@ import z from "zod";
 import { SongUriSchema } from "./song";
 
 export const PlaylistUriSchema = z
-  .string()
-  .regex(/^spotify:playlist:[a-zA-Z0-9]{22}$/);
+  .string().url()
 
 export const PlaylistSchema = z.object({
   uri: PlaylistUriSchema,

@@ -18,7 +18,7 @@ export const QueueElementSchema = z.object({
   type: PositionTypeSchema,
   playStartTime: z.date().optional(),
   pos: z.number().min(0).optional(),
-  addedBy: z.string().optional(),
+  addedBy: z.string().optional()
 });
 
 export type PositionType = z.infer<typeof PositionTypeSchema>;
