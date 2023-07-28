@@ -18,8 +18,7 @@ export function getNew() {
 
 export function getFullQueue() {
   return queueCollection
-    .find({ type: { $regex: "$regex: /^(queued|next|now)$/" } })
+    .find({ type: { $in: ["now", "next", "queued"] } })
     .sort({ pos: 1 })
     .toArray();
 }
-

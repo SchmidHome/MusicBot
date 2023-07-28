@@ -39,8 +39,8 @@ type ApiPlayingElement = ApiQueueElement & {
 | ---------- | ------ | ------------------------------------------ | ------------------------------ | ------------- | ------ |
 | /          | GET    |                                            | MusicBot Vx                    | version       | OK     |
 | /volume    | GET    |                                            | 0-100                          | get volume    | OK     |
-| /queue     | GET    |                                            | ApiQueueElement[]              | get queue     | WIP    |
-| /playing   | GET    |                                            | ApiPlayingElement or undefined | get playing   | WIP    |
+| /queue     | GET    |                                            | ApiQueueElement[]              | get queue     | OK     |
+| /playing   | GET    |                                            | ApiPlayingElement or undefined | get playing   | OK     |
 | /lyrics    | GET    |                                            | string                         | get lyrics    | -      |
 | /volume    | POST   | "+" "-" or 0-100                           | 0-100                          | set volume    | OK     |
 | /search    | POST   | string                                     | ApiSongElement[]               | search        | -      |

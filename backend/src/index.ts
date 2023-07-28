@@ -56,7 +56,7 @@ async function checkPlaying() {
 
     logger.debug(`time left:  ${timeLeft / 1000}s`);
 
-    if ((!queueNextSong && timeLeft < 90 * 1000) || paused) {
+    if ((!queueNextSong && timeLeft < 90 * 3 * 1000) || paused) {
       // set new next
       const queue = await getQueued();
       if (queue.length > 0) {
@@ -126,5 +126,5 @@ if (startArg) {
   startAPI();
 
   setTimeout(checkPlaying, 2 * 1000);
-  setInterval(checkPlaying, 10 * 1000);
+  setInterval(checkPlaying, 20 * 1000);
 }
