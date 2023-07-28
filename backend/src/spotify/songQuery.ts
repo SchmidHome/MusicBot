@@ -1,15 +1,19 @@
-import { db } from "../mongodb";
+import z from "zod";
+import { db, validateCollection } from "../mongodb";
 import { awaitRequest } from "./rateLimiter";
-import { Song } from "./song";
+import { Song, SongSchema } from "./song";
 import { trackToSong } from "./songCache";
 import { loggerSpotify, spotify } from "./spotify";
 
-const searchCache = db.collection<{
-  str: string;
-  results: Song[];
-  end: boolean;
-  validUntil: number;
-}>("searchCache");
+const SearchSchema = z.object({
+  str: z.string(),
+  results: z.array(SongSchema),
+  end: z.boolean(),
+  validUntil: z.number(),
+});
+type Search = z.infer<typeof SearchSchema>;
+const searchCache = db.collection<Search>("searchCache");
+validateCollection(searchCache, SearchSchema);
 
 export async function querySong(
   searchText: string,

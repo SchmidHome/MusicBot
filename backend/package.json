@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node out/index.js",
     "serve": "tsc && node out/index.js",
-    "dev": "nodemon src/index.ts"
+    "dev": "nodemon src/index.ts",
+    "check-db": "ts-node src/index.ts check-db"
   },
   "repository": {
     "type": "git",

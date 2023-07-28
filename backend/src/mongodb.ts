@@ -1,5 +1,5 @@
-
-import { MongoClient } from "mongodb"
+import z from "zod"
+import { Collection, Document, MongoClient } from "mongodb"
 import { ConsoleLogger } from "./lib/logger";
 
 const logger = new ConsoleLogger("mongodb")
@@ -18,5 +18,18 @@ async function main() {
     logger.log('Connected successfully to server');
 }
 
-
 main()
+
+export async function validateCollection<T extends Document>(collection: Collection<T>, schema: z.ZodTypeAny) {
+    const allData = await collection.find().toArray()
+    let errors = 0
+    allData.forEach((data) => {
+        try {
+            schema.parse(data)
+        } catch (e) {
+            logger.error(`Invalid data in collection ${collection.collectionName}: ${JSON.stringify(data)}`)
+            errors++
+        }
+    })
+    logger.log(`Found ${errors}/${allData.length} errors in collection ${collection.collectionName}`)
+}

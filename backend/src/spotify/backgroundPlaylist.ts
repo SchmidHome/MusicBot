@@ -1,7 +1,7 @@
 import z from "zod";
 import { loggerSpotify } from "./spotify";
 import { Song } from "./song";
-import { db } from "../mongodb";
+import { db, validateCollection } from "../mongodb";
 import { getPlaylist } from "./playlistCache";
 import { playedRecently } from "../queue/playedRecently";
 import { getSong } from "./songCache";
@@ -17,6 +17,7 @@ export type BackgroundPlaylist = z.infer<typeof BackgroundPlaylistSchema>;
 const backgroundPlaylists = db.collection<BackgroundPlaylist>(
   "backgroundPlaylists"
 );
+validateCollection(backgroundPlaylists, BackgroundPlaylistSchema);
 
 export async function getSongFromBackgroundPlaylist() {
   try {

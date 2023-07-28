@@ -12,7 +12,7 @@ services:
     restart: always
     ports:
     - 3000:3000
-    
+
 
   mongo:
     image: mongo
@@ -25,7 +25,7 @@ services:
     # volumes:
   # - ./data:/data/db
 
-  mongo-express:
+  mongo-ui:
     image: mongo-express
     restart: always
     ports:
@@ -35,9 +35,10 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: pass
       ME_CONFIG_MONGODB_URL: mongodb://root:pass@mongo:27017/
 
-  spotify-lyrics-api:
+  lyrics-api:
     image: spotify-lyrics-api
     build:
+      context: .
       dockerfile: spotify-lyrics-api.Dockerfile
       no_cache: true
     restart: always

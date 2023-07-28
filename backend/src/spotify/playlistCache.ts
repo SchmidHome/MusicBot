@@ -1,10 +1,11 @@
-import { Cached, db } from "../mongodb";
-import { Playlist, PlaylistUri } from "./playlist";
+import { Cached, db, validateCollection } from "../mongodb";
+import { Playlist, PlaylistSchema, PlaylistUri } from "./playlist";
 import { Song } from "./song";
 import { trackToSong } from "./songCache";
 import { loggerSpotify, spotify } from "./spotify";
 
 const playlistCache = db.collection<Cached<Playlist>>("playlistCache");
+validateCollection(playlistCache, PlaylistSchema);
 
 export async function getPlaylist(uri: PlaylistUri) {
   const id = uri.slice(34, 56);

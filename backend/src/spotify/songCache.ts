@@ -1,9 +1,10 @@
-import { Cached, db } from "../mongodb";
+import { Cached, db, validateCollection } from "../mongodb";
 import { awaitRequest, canRequest } from "./rateLimiter";
-import { Song, SongUri } from "./song";
+import { Song, SongSchema, SongUri } from "./song";
 import { loggerSpotify, spotify } from "./spotify";
 
 const songCache = db.collection<Cached<Song>>("songCache");
+validateCollection(songCache, SongSchema);
 
 export async function getSong(uri: SongUri): Promise<Song> {
   const cachedSong = await songCache.findOne({ songUri: uri });
