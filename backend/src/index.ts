@@ -51,14 +51,12 @@ async function checkPlaying() {
     let queueNextSong = await getNext();
 
     // check if next exists and the last 90 seconds are playing or music is paused
-    if (
-      !queueNextSong &&
-      (now.startDate.getTime() +
-        (await getSong(now.songUri)).duration_ms -
-        Date.now() <
-        90 * 1000 ||
-        paused)
-    ) {
+    const nowSong = await getSong(now.songUri);
+    const timeLeft = now.startDate.getTime() + nowSong.duration_ms - Date.now();
+
+    logger.debug(`time left:  ${timeLeft / 1000}s`);
+
+    if ((!queueNextSong && timeLeft < 90 * 1000) || paused) {
       // set new next
       const queue = await getQueued();
       if (queue.length > 0) {
@@ -128,5 +126,5 @@ if (startArg) {
   startAPI();
 
   setTimeout(checkPlaying, 2 * 1000);
-  setInterval(checkPlaying, 20 * 1000);
+  setInterval(checkPlaying, 10 * 1000);
 }
