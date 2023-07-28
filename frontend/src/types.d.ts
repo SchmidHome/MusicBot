@@ -33,21 +33,8 @@ export interface UnsyncedLyrics {
 
 export interface NoLyrics {
   error: true;
-  syncType: "NO_LYRICS";
+  syncType: "NO_LYRICS" | "NO_SONG";
   lines: [];
 }
 
 export type Lyrics = NoLyrics | SyncedLyrics | UnsyncedLyrics;
-
-export enum Vote {
-  Up = 1,
-  Down = -1,
-  Double = 2,
-}
-
-export interface CastedVote {
-  id: string;
-  vote: Vote;
-  timestamp: Date;
-  song: Song;
-}

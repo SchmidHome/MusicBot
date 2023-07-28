@@ -7,10 +7,10 @@ const config = {
   preprocess: [
     preprocess({
       scss: {
-        prependData: '@use "src/variables.sass" as *;',
+        prependData: '@use "frontend/src/variables.sass" as *;',
       },
       sass: {
-        prependData: '@use "src/variables.sass" as *',
+        prependData: '@use "frontend/src/variables.sass" as *',
       },
     }),
   ],

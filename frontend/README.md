@@ -18,10 +18,6 @@ Following environment variables can be used (only `PUBLIC_SERVER_URL` is mandato
   PUBLIC_QUEUE_FETCH_INTERVAL: number = 3000,
   PUBLIC_CURRENT_SONG_FETCH_INTERVAL: number = 3000,
   PUBLIC_LYRICS_FETCH_INTERVAL: number = 20000,
-  // fallback link if no qr code link is given as url query param
-  PUBLIC_DEFAULT_QR_LINK: string = "https://t.me/MusicHomeBot"
-  // link the vote button redirects to
-  PUBLIC_VOTE_LINK: string = "https://t.me/MusicHomeBot"
 }
 ```
 

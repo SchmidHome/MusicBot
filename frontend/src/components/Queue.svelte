@@ -4,8 +4,7 @@
   export let displayedSongs = 5;
 </script>
 
-<div class="wrapper">
-  <h2 class="header">Queue</h2>
+<div class="wrapper" style:--items={displayedSongs}>
   {#if $queue.length === 0}
     <h2 class="no-queue">Keine Songs in Queue</h2>
   {/if}
@@ -25,30 +24,13 @@
 
 <style lang="sass">
   .wrapper
-    display: flex
-    flex-direction: column
+    --items: 5
+    display: grid
+    grid-template-rows: repeat(var(--items), 1fr)
     align-items: center
     width: 100%
     flex-grow: 1
     position: relative
-
-  .header
-    background: $bg-light
-    color: $text
-    width: 100%
-    text-align: center
-    padding: calc($spacing * 2)
-    font-size: 1.5rem
-    margin: 0
-    border-radius: $border-radius
-    box-shadow: $shadow
-    box-sizing: border-box
-    @media screen and (orientation: landscape)
-      display: none
-    
-  
-  .empty
-    flex: 1 1 0
   
   .no-queue
     color: $text

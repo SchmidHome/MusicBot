@@ -49,14 +49,13 @@ export async function refreshQueue(): Promise<Song[]> {
     ]
       .map((_, __, arr) => [...arr])
       .flat();
-    //@ts-ignore
+
     window.queue = songs;
     queue.set(songs);
     return songs;
   }
   const songs = await customFetch<Song[]>("/queue");
   if (songs) {
-    //@ts-ignore
     window.queue = songs;
     queue.set(songs);
   }
