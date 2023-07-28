@@ -5,7 +5,7 @@ import { customFetch } from "./functions";
 
 export const lyrics = writable<Lyrics>({
   error: true,
-  syncType: "NO_LYRICS",
+  syncType: "NO_SONG",
   lines: [],
 });
 
@@ -1063,8 +1063,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
     const newLyrics = possibleLyrics[3];
     lyrics.set(newLyrics);
 
-    //@ts-ignore
-    window.lyrics = lyrics;
+    window.lyrics = newLyrics;
 
     return newLyrics;
   } else {
@@ -1073,7 +1072,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
     if (!newLyrics || newLyrics === "noting playing") {
       const errorLyrics: Lyrics = {
         error: true,
-        syncType: "NO_LYRICS",
+        syncType: "NO_SONG",
         lines: [],
       };
       lyrics.set(errorLyrics);
@@ -1092,7 +1091,6 @@ export async function refreshLyrics(): Promise<Lyrics> {
 
     lyrics.set(newLyrics);
 
-    //@ts-ignore
     window.lyrics = newLyrics;
 
     return newLyrics;

@@ -90,10 +90,13 @@
     margin: calc($spacing / 2) 0
     word-break: break-word
     max-width: 100%
-    font-size: $font-big
-    color: $text
-    &.current~ p
-      color: $text-low
+    font-size: 2em
+    transition: color 1s, margin 1s
+    // &.current~ p
+    color: $text-low
+    &.current
+      color: $text
+      margin: calc($spacing * 4) 0
 
   .padding_element
     height: 100%
@@ -109,7 +112,7 @@
     align-items: center
     justify-content: center
     p
-      font-size: $font-big
+      font-size: 2em
       color: $text-low
       text-align: center
       margin: 0

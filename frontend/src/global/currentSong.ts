@@ -1,9 +1,9 @@
 import { get, writable } from "svelte/store";
 import { connectionError } from "./connectionError";
-import type { CurrentSong, Song } from "../types";
+import type { CurrentSong } from "../types";
 import { customFetch } from "./functions";
 
-const DEFAULT_SONG = {
+export const PLACEHOLDER_SONG = {
   name: "No song playing",
   artist: "-",
   coverURL: "such-empty.jpg",
@@ -14,15 +14,15 @@ const DEFAULT_SONG = {
   voteSummary: 0,
 };
 
-export const currentSong = writable<CurrentSong>(DEFAULT_SONG);
+export const currentSong = writable<CurrentSong | null>(null);
 // automatically increment seconds every 100ms
-let secondsInterval: NodeJS.Timer;
+let secondsInterval: number;
 // reset seconds interval
 function resetSeconds() {
   if (secondsInterval) clearInterval(secondsInterval);
   secondsInterval = setInterval(() => {
     if (!get(connectionError)) {
-      const songValue = get(currentSong);
+      const songValue = get(currentSong) ?? PLACEHOLDER_SONG;
       currentSong.set({
         ...songValue,
         positionInTrack: Math.max(
@@ -34,7 +34,7 @@ function resetSeconds() {
   }, 100);
 }
 
-export async function refreshCurrentSong(): Promise<CurrentSong> {
+export async function refreshCurrentSong(): Promise<CurrentSong | null> {
   // start seconds interval if not started
   if (!secondsInterval) resetSeconds();
   if (import.meta.env.PUBLIC_MOCK_SERVER) {
@@ -45,16 +45,15 @@ export async function refreshCurrentSong(): Promise<CurrentSong> {
         "https://i.scdn.co/image/ab67616d00001e02e06457bcad9e375ba856a11c",
       dj: "DJ Fieka",
       positionInTrack:
-        get(currentSong).positionInTrack >= 215870
+        (get(currentSong) ?? PLACEHOLDER_SONG).positionInTrack >= 215870
           ? 0
-          : get(currentSong).positionInTrack,
+          : (get(currentSong) ?? PLACEHOLDER_SONG).positionInTrack,
       songDurationMs: 215870,
       startDate: new Date(Date.now() - 52000),
       voteSummary: 3,
     };
     currentSong.set(song);
 
-    //@ts-ignore
     window.currentSong = song;
 
     return song;
@@ -67,8 +66,8 @@ export async function refreshCurrentSong(): Promise<CurrentSong> {
     >("playing");
 
     if (!song || song === "nothing playing") {
-      currentSong.set(DEFAULT_SONG);
-      return DEFAULT_SONG;
+      currentSong.set(null);
+      return null;
     }
 
     const convertedSong: CurrentSong = {
@@ -90,7 +89,6 @@ export async function refreshCurrentSong(): Promise<CurrentSong> {
 
     currentSong.set(convertedSong);
 
-    //@ts-ignore
     window.currentSong = convertedSong;
 
     return convertedSong;
