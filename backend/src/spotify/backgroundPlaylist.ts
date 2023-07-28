@@ -7,3 +7,4 @@ export const BackgroundPlaylistSchema = z.object({
 });
 
 export type BackgroundPlaylist = z.infer<typeof BackgroundPlaylistSchema>;
+

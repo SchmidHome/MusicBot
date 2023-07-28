@@ -1,6 +1,7 @@
 import { ConsoleLogger } from "../lib/logger";
-import { Song } from "../spotify/song";
-import { Player } from "./player";
+import { Song, SongUri } from "../spotify/song";
+import { getSong } from "../spotify/songCache";
+import { Player, PlayingState } from "./player";
 
 export class EmptyPlayer extends Player {
   private logger = new ConsoleLogger("EmptyPlayer");
@@ -20,19 +21,25 @@ export class EmptyPlayer extends Player {
     this.volume = volume;
   }
 
+  private startDate?: Date;
   private playing?: Song;
   private next?: Song;
-  async getPlaying(): Promise<Song | undefined> {
-    this.logger.log("getPlaying called");
-    return this.playing;
+  async getPlayingState(): Promise<PlayingState> {
+    this.logger.log("getPlayingState called");
+    return {
+      paused: this.startDate === undefined,
+      now: this.playing
+        ? {
+            songUri: this.playing.songUri,
+            startDate: new Date(),
+          }
+        : undefined,
+      next: this.next ? { songUri: this.next.songUri } : undefined,
+    };
   }
 
-  async getNext(): Promise<Song | undefined> {
-    this.logger.log("getNext called");
-    return this.next;
-  }
-
-  async setNext(song: Song): Promise<void> {
+  async setNext(songUri: SongUri): Promise<void> {
+    let song = await getSong(songUri);
     this.logger.log(`setNext called with ${song.name}`);
     // this.next = song;
     if (!this.playing) {
@@ -46,11 +53,13 @@ export class EmptyPlayer extends Player {
   startTimeout() {
     if (this.playing) {
       this.logger.log(`${this.playing.name} started`);
+      this.startDate = new Date();
       setTimeout(() => {
         if (this.playing) {
           this.logger.log(`${this.playing.name} finished`);
           this.playing = this.next;
           this.next = undefined;
+          this.startDate = undefined;
         }
         this.startTimeout();
       }, this.playing.duration_ms);

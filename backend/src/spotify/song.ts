@@ -3,7 +3,7 @@ import z from "zod";
 export const SongUriSchema = z.string().url(); // ID
 
 export const SongSchema = z.object({
-  spotifyUri: SongUriSchema,
+  songUri: SongUriSchema,
   name: z.string(),
   artist: z.string(),
   album: z.string(),
