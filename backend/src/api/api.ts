@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { ConsoleLogger } from "../lib/logger";
 import volumeRouter from "./volume";
 import { queueRouter } from "./queue";
+import { checkUser, getIp } from "../user";
 
 export const loggerAPI = new ConsoleLogger("api");
 
@@ -20,6 +21,13 @@ app.use(
 );
 
 app.get("/", async (_, res) => res.send("MusicBot V2"));
+app.get("/user", async (req, res) => {
+  const ip = getIp(req);
+  if (!ip) return res.status(400).send("No IP found.");
+  const user = await checkUser(req);
+  if (user) return res.status(200).json(user);
+  else res.status(201).json({ ip });
+});
 
 app.use(volumeRouter);
 app.use(queueRouter);
