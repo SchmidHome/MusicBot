@@ -19,6 +19,7 @@ async function checkPlaying() {
   let queuePlayingSong = await getPlaying();
 
   if (now) {
+    // sync playing to queue
     if (!queuePlayingSong || queuePlayingSong.songUri !== now.songUri) {
       // new Song is playing
       if (queuePlayingSong) await setType(queuePlayingSong._id, "played");
@@ -56,7 +57,7 @@ async function checkPlaying() {
 
     logger.debug(`time left:  ${timeLeft / 1000}s`);
 
-    if ((!queueNextSong && timeLeft < 90 * 3 * 1000) || paused) {
+    if (!queueNextSong && (timeLeft < 90 * 1000 || paused)) {
       // set new next
       const queue = await getQueued();
       if (queue.length > 0) {
@@ -78,8 +79,10 @@ async function checkPlaying() {
     if (queueNextSong && queueNextSong.songUri !== next?.songUri) {
       // set new next
       if (nextCounter === 0) {
-        nextCounter = 4;
+        nextCounter = 3;
         await usedPlayer.setNext(queueNextSong.songUri);
+      } else {
+        logger.log(`not applying next for ${nextCounter} more checks`);
       }
     }
 
