@@ -6,15 +6,17 @@ import { getSong } from "../spotify/songCache";
 import { addSong, setPosition, setType } from "../queue/setter";
 import { checkUser } from "../user";
 import { resortQueue } from "../queue/sort";
+import usedPlayer from "../player/usedPlayer";
 
 export const queueRouter = Router();
 
 queueRouter.get("/playing", async (req, res) => {
   const playing = await getPlaying();
+  const paused = await usedPlayer.getPlayingState();
   if (!playing) return res.json(undefined);
 
   const song = await getSong(playing.songUri);
-  res.status(200).json({ ...playing, ...song });
+  res.status(200).json({ ...playing, ...song, paused });
 });
 
 queueRouter.get("/queue", async (req, res) => {

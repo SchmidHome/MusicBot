@@ -28,6 +28,7 @@ type ApiQueueElement = ApiSongElement & {
 }
 
 type ApiPlayingElement = ApiQueueElement & {
+    paused: boolean;
     type: "now";
     pos: 0;
 }
