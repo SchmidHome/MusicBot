@@ -44,6 +44,8 @@ services:
     restart: always
     ports:
     - 8000:8000
-    environment:
-      SP_DC: ${SP_DC}
+    # environment:
+    #   SP_DC: ${SP_DC}
+    env_file:
+    - backend/.env
     stop_signal: SIGINT

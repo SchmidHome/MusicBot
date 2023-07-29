@@ -7,6 +7,7 @@ import volumeRouter from "./volume";
 import { queueRouter } from "./queue";
 import { checkUser, getIp } from "../user";
 import { searchRouter } from "./search";
+import { lyricsRouter } from "./lyrics";
 
 export const loggerAPI = new ConsoleLogger("api");
 
@@ -34,6 +35,7 @@ app.get("/user", async (req, res) => {
 app.use(volumeRouter);
 app.use(queueRouter);
 app.use(searchRouter);
+app.use(lyricsRouter);
 
 export function startAPI() {
   app.listen(3000, () => loggerAPI.log("Started and listening on port 3000."));

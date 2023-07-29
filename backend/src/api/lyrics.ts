@@ -1,27 +1,19 @@
-export interface Lyric {
-  startTimeMs: number;
-  words: string;
-  syllables: [];
-  endTimeMs: 0;
-}
+import { Router } from "express";
+import { getPlaying } from "../queue/getter";
+import { getSong } from "../spotify/songCache";
+import { getLyrics } from "../spotify/lyrics";
+import usedPlayer from "../player/usedPlayer";
 
-export interface SyncedLyrics {
-  error: false;
-  syncType: "LINE_SYNCED";
-  lines: Lyric[];
-}
+export const lyricsRouter = Router();
 
-export interface UnsyncedLyrics {
-  error: false;
-  syncType: "UNSYNCED";
-  lines: (Omit<Lyric, "startTimeMs"> & { startTimeMs: 0 })[];
-}
+lyricsRouter.get("/lyrics", async (req, res) => {
+  const playing = await getPlaying();
+  if (!playing) return res.json(undefined);
+  const paused = (await usedPlayer.getPlayingState()).paused;
 
-export interface NoLyrics {
-  error: true;
-  syncType: "NO_LYRICS" | "NO_SONG";
-  lines: [];
-}
+  const song = await getSong(playing.songUri);
 
-export type Lyrics = NoLyrics | SyncedLyrics | UnsyncedLyrics;
+  const lyrics = await getLyrics(song.songUri);
 
+  res.status(200).json({ ...playing, ...song, paused, lyrics });
+});
