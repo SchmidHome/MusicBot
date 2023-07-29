@@ -36,7 +36,7 @@ export function getIp(req: Request<any, any, any>): IP | undefined {
 export async function checkUser(
   req: Request<any, any, any>
 ): Promise<User | undefined> {
-  let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  let ip = getIp(req);
 
   logger.debug(`IP: ${ip}`);
 
