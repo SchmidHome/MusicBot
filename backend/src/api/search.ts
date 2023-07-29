@@ -10,7 +10,7 @@ const searchPostSchema = z.object({
     resultCount: z.number().default(5),
 });
 
-searchRouter.search("/search", async (req, res) => {
+searchRouter.post("/search", async (req, res) => {
     const user = await checkUser(req);
     if (!user) return res.status(401).send("Unauthorized");
 

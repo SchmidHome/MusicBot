@@ -31,7 +31,7 @@ export async function getPlaylist(uri: PlaylistUri) {
     const newPlaylist = {
       uri,
       songs: songs.map((e) => e.songUri),
-      validUntil: Date.now() + 1000 * 60,
+      validUntil: Date.now() + 1000 * 60 * 60,
     };
     await playlistCache.updateOne(
       { id },

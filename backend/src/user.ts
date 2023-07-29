@@ -2,6 +2,7 @@ import z, { array } from "zod";
 import { db, validateCollection } from "./mongodb";
 import { Request } from "express";
 import { ConsoleLogger } from "./lib/logger";
+import { OptionalId } from "mongodb";
 
 const logger = new ConsoleLogger("user");
 
@@ -39,7 +40,8 @@ export async function checkUser(
 
   logger.debug(`IP: ${ip}`);
 
-  const user = await userCollection.findOne({ ip });
+  const user: OptionalId<User> | null = await userCollection.findOne({ ip });
   if (!user) return undefined;
+  delete user._id;
   return user;
 }

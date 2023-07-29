@@ -21,9 +21,8 @@ queueRouter.get("/queue", async (req, res) => {
   const queue = await getFullQueue();
   queue.shift();
   const songQueue = await Promise.all(
-    queue.map(async (song) => getSong(song.songUri))
+    queue.map(async (song) => ({ ...song, ...(await getSong(song.songUri)) }))
   );
-  loggerAPI.debug(JSON.stringify(songQueue));
   res.status(200).json(songQueue);
 });
 
