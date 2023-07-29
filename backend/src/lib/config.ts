@@ -16,7 +16,6 @@ function CONFIG(name: string) {
 }
 
 logger.info("loading environment variables")
-export const TELEGRAM_TOKEN = CONFIG("TELEGRAM_TOKEN")
 export const SPOTIFY_CLIENT_ID = CONFIG("SPOTIFY_CLIENT_ID")
 export const SPOTIFY_CLIENT_SECRET = CONFIG("SPOTIFY_CLIENT_SECRET")
 export const SPOTIFY_PLAYER_CODE = CONFIG("SPOTIFY_PLAYER_CODE")
