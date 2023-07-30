@@ -7,6 +7,7 @@ import { addSong, setPosition, setType } from "../queue/setter";
 import { checkUser } from "../user";
 import { resortQueue } from "../queue/sort";
 import usedPlayer from "../player/usedPlayer";
+import { playedRecently } from "../queue/playedRecently";
 
 export const queueRouter = Router();
 
@@ -45,6 +46,11 @@ queueRouter.post("/queue", async (req, res) => {
 
   const song = await getSong(songUri);
   if (!song) return res.status(404).send("Song not found.");
+
+  if (await playedRecently(song)) {
+    return res.status(400).send("Song played recently.");
+  }
+
   addSong(song.songUri, user.name);
   res.status(200).send("Added song to queue.");
 });
