@@ -1,35 +1,44 @@
-import z from "zod"
-import { Collection, Document, MongoClient } from "mongodb"
+import z from "zod";
+import { Collection, Document, MongoClient } from "mongodb";
 import { ConsoleLogger } from "./lib/logger";
 
-const logger = new ConsoleLogger("mongodb")
+const logger = new ConsoleLogger("mongodb");
 
-export type Cached<T> = T & { validUntil: number }
+export type Cached<T> = T & { validUntil: number };
 
-export const client = new MongoClient("mongodb://root:pass@localhost:27017/")
+export const client = new MongoClient("mongodb://root:pass@localhost:27017/");
 
-export const db = client.db("musicbot")
+export const db = client.db("musicbot");
 
-export const collection = db.collection.bind(db)
+export const collection = db.collection.bind(db);
 
 async function main() {
-    logger.log("Connecting to server...")
-    await client.connect();
-    logger.log('Connected successfully to server');
+  logger.log("Connecting to server...");
+  await client.connect();
+  logger.log("Connected successfully to server");
 }
 
-main()
+main();
 
-export async function validateCollection<T extends Document>(collection: Collection<T>, schema: z.ZodTypeAny) {
-    const allData = await collection.find().toArray()
-    let errors = 0
-    allData.forEach((data) => {
-        try {
-            schema.parse(data)
-        } catch (e) {
-            logger.error(`Invalid data in collection ${collection.collectionName} id ${data._id}: ${JSON.stringify(e)}`)
-            errors++
-        }
-    })
-    logger.log(`Found ${errors}/${allData.length} errors in collection ${collection.collectionName}`)
+export async function validateCollection<T extends Document>(
+  collection: Collection<T>,
+  schema: z.ZodTypeAny
+) {
+  const allData = await collection.find().toArray();
+  let errors = 0;
+  allData.forEach((data) => {
+    try {
+      schema.parse(data);
+    } catch (e) {
+      logger.error(
+        `Invalid data in collection ${collection.collectionName} id ${
+          data._id
+        }: ${JSON.stringify(e)}`
+      );
+      errors++;
+    }
+  });
+  logger.log(
+    `Found ${errors}/${allData.length} errors in collection ${collection.collectionName}`
+  );
 }

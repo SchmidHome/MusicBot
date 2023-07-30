@@ -19,6 +19,28 @@ const backgroundPlaylists = db.collection<BackgroundPlaylist>(
 );
 validateCollection(backgroundPlaylists, BackgroundPlaylistSchema);
 
+//INIT
+(async () => {
+  if (!(await backgroundPlaylists.findOne({ selected: true }))) {
+    const defaultPlaylist = await backgroundPlaylists.findOne({
+      name: "Partymix",
+    });
+    if (defaultPlaylist) {
+      await backgroundPlaylists.updateOne(
+        { _id: defaultPlaylist._id },
+        { $set: { selected: true } }
+      );
+    } else {
+      loggerSpotify.info(`No default playlist found. Initializing Database`);
+      await backgroundPlaylists.insertOne({
+        name: "Partymix",
+        uri: "https://open.spotify.com/playlist/7hw2TUqBB7h3OEDakMZ2J9?si=1dbb703361c44d46",
+        selected: true,
+      });
+    }
+  }
+})();
+
 export async function getSongFromBackgroundPlaylist() {
   try {
     const activeBackgroundPlaylists = await backgroundPlaylists

@@ -27,6 +27,18 @@ export type User = z.infer<typeof UserSchema>;
 export const userCollection = db.collection<User>("users");
 validateCollection(userCollection, UserSchema);
 
+//INIT
+(async () => {
+  if (!(await userCollection.findOne({ ip: "::1" }))) {
+    logger.info(`No admin user found. Initializing Database`);
+    await userCollection.insertOne({
+      ip: "::1",
+      name: "ADMIN",
+      state: "admin",
+    });
+  }
+})()
+
 export function getIp(req: Request<any, any, any>): IP | undefined {
   let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   if (!ip) return undefined;
