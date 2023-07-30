@@ -1,22 +1,29 @@
-import type { MutexInterface } from 'async-mutex';
-import { Mutex } from 'async-mutex';
+import type { MutexInterface } from "async-mutex";
+import { Mutex } from "async-mutex";
 
 /**
  * Single threaded write-preferring read write lock
  */
-class RWLock {
+export class RWLockWritePreferring {
   protected readersLock: Mutex = new Mutex();
   protected writersLock: Mutex = new Mutex();
   protected readersRelease: MutexInterface.Releaser = () => {};
   protected readerCountBlocked: number = 0;
+  protected writersCountBlocked: number = 0;
   protected _readerCount: number = 0;
   protected _writerCount: number = 0;
 
   public get readerCount(): number {
     return this._readerCount + this.readerCountBlocked;
   }
+  public get actualReaderCount(): number {
+    return this._readerCount;
+  }
 
   public get writerCount(): number {
+    return this._writerCount + this.writersCountBlocked;
+  }
+  public get actualWriterCount(): number {
     return this._writerCount;
   }
 
@@ -39,11 +46,6 @@ class RWLock {
   }
 
   public async acquireRead(): Promise<() => void> {
-    if (this._writerCount > 0) {
-      ++this.readerCountBlocked;
-      await this.writersLock.waitForUnlock();
-      --this.readerCountBlocked;
-    }
     const readerCount = ++this._readerCount;
     // The first reader locks
     if (readerCount === 1) {
@@ -59,6 +61,11 @@ class RWLock {
   }
 
   public async acquireWrite(): Promise<() => void> {
+    if (this._writerCount > 0) {
+      ++this.writersCountBlocked;
+      await this.writersLock.waitForUnlock();
+      --this.writersCountBlocked;
+    }
     ++this._writerCount;
     const writersRelease = await this.writersLock.acquire();
     this.readersRelease = await this.readersLock.acquire();
@@ -76,7 +83,7 @@ class RWLock {
   public async waitForUnlock(): Promise<void> {
     await Promise.all([
       this.readersLock.waitForUnlock(),
-      this.writersLock.waitForUnlock()
+      this.writersLock.waitForUnlock(),
     ]);
     return;
   }

@@ -4,11 +4,13 @@ import { Mutex } from "async-mutex";
 /**
  * Single threaded read-preferring read write lock
  */
-class RWLock {
+export class RWLockReadPreferring {
   protected _readerCount: number = 0;
   protected _writerCount: number = 0;
   protected lock: Mutex = new Mutex();
   protected release: MutexInterface.Releaser = () => {};
+
+  protected writersCountBlocked: number = 0;
 
   public get readerCount(): number {
     return this._readerCount;
