@@ -16,7 +16,7 @@ export class SonosPlayer extends Player {
     const state = await getPlayingState();
     const playing = await getPlaying();
     return {
-        paused: state,
+        paused: !state,
         now: playing ? { songUri: playing.now.spotifyUri, startDate: playing.now.startDate } : undefined,
         next: playing?.next ? { songUri: playing.next.spotifyUri } : undefined
     };
