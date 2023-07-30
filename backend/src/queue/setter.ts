@@ -4,10 +4,15 @@ import { queueCollection } from "./queue";
 import { PositionType } from "./types";
 
 export function setPlayStartTime(id: ObjectId, time: Date) {
-  return queueCollection.updateOne({ _id: id }, { $set: { playStartTime: time } });
+  return queueCollection.updateOne(
+    { _id: id },
+    { $set: { playStartTime: time } }
+  );
 }
 
-export function setPosition(id: ObjectId, pos: number) {
+export function setPosition(id: ObjectId, pos: number, type?: PositionType) {
+  if (type)
+    return queueCollection.updateOne({ _id: id }, { $set: { pos, type } });
   return queueCollection.updateOne({ _id: id }, { $set: { pos } });
 }
 

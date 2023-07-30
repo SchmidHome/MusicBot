@@ -8,6 +8,12 @@ export async function sortQueue(elements?: WithId<QueueElement>[]) {
   //TODO use semaphore
   if (!elements) elements = [...(await getFullQueue()), ...(await getNew())];
 
+  elements.forEach((e) => {
+    if (e.type === "new") e.pos = 0;
+    else if (e.type === "next") e.pos = 1;
+    else if (e.pos && e.pos <= 1) e.pos = 1.5;
+  });
+
   elements = elements.sort((a, b) => {
     if (typeof a.pos === "number" && typeof b.pos === "number") {
       return a.pos - b.pos;
@@ -18,7 +24,12 @@ export async function sortQueue(elements?: WithId<QueueElement>[]) {
     }
   });
 
-  await Promise.all(elements.map((e, i) => setPosition(e._id, i)));
+  await Promise.all(
+    elements.map(async (e, i) => {
+      if (e.type === "new") return setPosition(e._id, 0, "queued");
+      return setPosition(e._id, i);
+    })
+  );
 }
 
 export async function resortQueue(_id: ObjectId, posChange: number) {
