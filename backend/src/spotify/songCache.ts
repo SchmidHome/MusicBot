@@ -35,7 +35,7 @@ export async function trackToSong(
     imageUri: track.album.images[0].url,
     songUri: track.uri,
     duration_ms: track.duration_ms,
-    color: color || [255, 255, 255]
+    color: color || [255, 255, 255],
   };
 
   await songCache.updateOne(

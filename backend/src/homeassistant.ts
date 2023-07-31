@@ -56,7 +56,7 @@ export async function updateColor() {
       return (running = false);
     lastColor = color;
     lastUpdate = Date.now();
-    logger.log(`updating color to ${color}`);
+    logger.log(`updating color to R${color[0]} G${color[1]} B${color[2]}`);
 
     await Promise.all(
       entityArr.map(async (entity) => {

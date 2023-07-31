@@ -1,3 +1,4 @@
+import { logger } from "../sonos/sonos";
 import { applyNextSpotifyUri, getPlaying } from "../sonos/sonosPlayControl";
 import { getPlayingState } from "../sonos/sonosPlayControl";
 import { getVolume, setVolume } from "../sonos/sonosVolumeControl";
@@ -14,9 +15,14 @@ export class SonosPlayer extends Player {
 
   async getPlayingState(): Promise<PlayingState> {
     const playing = await getPlaying();
+    logger.log(
+      `now: ${playing?.now?.spotifyUri}, next: ${playing?.next?.spotifyUri}`
+    );
     return {
-        now: playing ? { songUri: playing.now.spotifyUri, startDate: playing.now.startDate } : undefined,
-        next: playing?.next ? { songUri: playing.next.spotifyUri } : undefined
+      now: playing
+        ? { songUri: playing.now.spotifyUri, startDate: playing.now.startDate }
+        : undefined,
+      next: playing?.next ? { songUri: playing.next.spotifyUri } : undefined,
     };
   }
 
@@ -26,6 +32,6 @@ export class SonosPlayer extends Player {
   }
 
   async setNext(songUri: string): Promise<void> {
-    await applyNextSpotifyUri(songUri)
+    await applyNextSpotifyUri(songUri);
   }
 }
