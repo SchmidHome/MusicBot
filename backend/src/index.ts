@@ -1,4 +1,5 @@
 import { startAPI } from "./api/api";
+import startHA, { updateColor } from "./homeassistant";
 import { ConsoleLogger } from "./lib/logger";
 import usedPlayer from "./player/usedPlayer";
 import { getNew, getNext, getPlaying, getQueued } from "./queue/getter";
@@ -9,7 +10,12 @@ import { getSong } from "./spotify/songCache";
 
 const logger = new ConsoleLogger("index");
 
+startHA();
+
 let nextCounter = 0;
+
+let updateOnChange: NodeJS.Timeout | undefined;
+
 async function checkPlaying() {
   const { now, next, paused } = await usedPlayer.getPlayingState();
 
@@ -17,6 +23,7 @@ async function checkPlaying() {
 
   // check playing
   let queuePlayingSong = await getPlaying();
+  let oldQueuePlayingSong = queuePlayingSong;
 
   if (now) {
     // sync playing to queue
@@ -47,6 +54,9 @@ async function checkPlaying() {
       }
     }
     await setType(queuePlayingSong._id, "now");
+    if (oldQueuePlayingSong?._id !== queuePlayingSong._id) {
+      await updateColor();
+    }
 
     // check next
     let queueNextSong = await getNext();
@@ -79,7 +89,7 @@ async function checkPlaying() {
     if (queueNextSong && queueNextSong.songUri !== next?.songUri) {
       // set new next
       if (nextCounter === 0) {
-        nextCounter = 3;
+        nextCounter = 2;
         await usedPlayer.setNext(queueNextSong.songUri);
       } else {
         logger.log(`not applying next for ${nextCounter} more checks`);
@@ -88,6 +98,12 @@ async function checkPlaying() {
 
     await setPlayStartTime(queuePlayingSong._id, now.startDate);
     await updateTime();
+
+    // add special update on change
+    if (updateOnChange) clearTimeout(updateOnChange);
+    updateOnChange = setTimeout(() => {
+      checkPlaying();
+    }, timeLeft - 6500);
   } else {
     // initial start
     logger.log("initializing with first song");

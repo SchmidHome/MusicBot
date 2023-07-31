@@ -53,6 +53,9 @@ export async function getPlaying(): Promise<
   | undefined
 > {
   logger.log("getPlayingSpotifyUri()");
+
+  //TODO check unwanted pause
+
   const d = await device();
   try {
     const s_now = Date.now();
