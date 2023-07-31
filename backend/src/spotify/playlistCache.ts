@@ -27,7 +27,7 @@ export async function getPlaylist(uri: PlaylistUri) {
       );
       offset = result.offset + result.limit;
     } while (result.next);
-
+    loggerSpotify.log(`loaded playlist ${uri}`);
     const newPlaylist = {
       uri,
       songs: songs.map((e) => e.songUri),

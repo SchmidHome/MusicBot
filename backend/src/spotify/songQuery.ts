@@ -53,10 +53,10 @@ async function queryRequest(
   offset: number,
   limit: number
 ): Promise<Song[]> {
+  await awaitRequest();
   const tracks =
     (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items ||
     [];
-  await awaitRequest();
   loggerSpotify.log("query songs", song, offset, limit);
   return Promise.all(tracks.map(trackToSong));
 }

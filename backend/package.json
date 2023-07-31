@@ -14,7 +14,7 @@
     "pm2-watch": "pm2 start out/index.js --name musicbot --watch out/*",
     "pm2-stop": "pm2 stop musicbot",
     "pm2-restart": "pm2 restart musicbot",
-    "pm2-log": "pm2 logs musicbot --color"
+    "pm2-log": "pm2 logs musicbot"
   },
   "repository": {
     "type": "git",

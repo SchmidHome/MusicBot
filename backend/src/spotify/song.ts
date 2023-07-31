@@ -7,6 +7,11 @@ export const SongSchema = z.object({
   name: z.string(),
   artist: z.string(),
   album: z.string(),
+  color: z.tuple([
+    z.number().int().min(0).max(255),
+    z.number().int().min(0).max(255),
+    z.number().int().min(0).max(255),
+  ]),
   imageUri: z.string().url(),
   duration_ms: z.number(),
 });

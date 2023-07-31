@@ -11,14 +11,18 @@ const volumeCache = new SimpleCache(10000, async (_) => {
 });
 
 export async function getVolume(): Promise<number> {
-  logger.log("getVolume()");
-  return (await volumeCache.get(""))!;
+  let start = Date.now();
+  let volume = (await volumeCache.get(""))!;
+  logger.log(`getVolume(): ${Date.now() - start}ms`);
+  return volume;
 }
 
 export async function setVolume(volume: number): Promise<boolean> {
-  logger.log(`setVolume(${volume})`);
+  let start = Date.now();
   // targetVolume = volume
-  return await applyVolume(volume);
+  let res =  await applyVolume(volume);
+  logger.log(`setVolume(${volume}): ${Date.now() - start}ms`);
+  return res;
 }
 
 async function applyVolume(volume: number) {

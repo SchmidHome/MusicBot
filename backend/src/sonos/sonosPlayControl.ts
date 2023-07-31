@@ -40,10 +40,11 @@ function removeFromQueue(d: SonosDevice, index: number) {
 }
 
 export async function getPlayingState(): Promise<boolean> {
-  logger.log("getPlayingState()");
+  let start = Date.now();
   const d = await device();
-  const state = await getState(d);
-  return state === "PLAYING";
+  const state = (await getState(d)) === "PLAYING";
+  logger.log(`getPlayingState() -> ${state} : ${Date.now() - start}ms`);
+  return state;
 }
 
 export async function getPlaying(): Promise<
@@ -53,7 +54,7 @@ export async function getPlaying(): Promise<
     }
   | undefined
 > {
-  logger.log("getPlayingSpotifyUri()");
+  let start = Date.now();
 
   //TODO check unwanted pause
 
@@ -87,14 +88,16 @@ export async function getPlaying(): Promise<
       }
     }
 
+    logger.log(`getPlaying() OK : ${Date.now() - start}ms`);
     return { now, next };
   } catch (error) {
+    logger.error(`getPlaying() ERR: ${Date.now() - start}ms`);
     return undefined;
   }
 }
 
 export async function applyNextSpotifyUri(uri: string): Promise<void> {
-  logger.log(`applyNextSpotifyUri(${uri})`);
+  let start = Date.now();
   const d = await device();
 
   // try getting the info 3 times with 1 sec delay
@@ -124,16 +127,14 @@ export async function applyNextSpotifyUri(uri: string): Promise<void> {
 
   const queue = await getQueue(d);
 
-  if (info) {
-    // purge unwanted tracks
-    try {
-      for (let i = queue.length - 1; i > info.track; i--)
-        await removeFromQueue(d, i);
-    } catch (error) {
-      logger.error(`Error removing tracks from queue: ${error}`);
-    }
+  const end = info ? info.track : -1;
+  try {
+    for (let i = queue.length - 1; i > end; i--) await removeFromQueue(d, i);
+  } catch (error) {
+    logger.error(`Error removing tracks from queue: ${error}`);
   }
 
   // add new track
   await d.AddUriToQueue(uri);
+  logger.log(`applyNextSpotifyUri(${uri}): ${Date.now() - start}ms`);
 }
