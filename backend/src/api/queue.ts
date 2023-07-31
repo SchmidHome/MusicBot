@@ -13,7 +13,7 @@ export const queueRouter = Router();
 
 queueRouter.get("/playing", async (req, res) => {
   const playing = await getPlaying();
-  const paused = (await usedPlayer.getPlayingState()).paused;
+  const paused = await usedPlayer.getPaused();
   if (!playing) return res.json(undefined);
 
   const song = await getSong(playing.songUri);

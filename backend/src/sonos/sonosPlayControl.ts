@@ -1,6 +1,7 @@
 import { SonosDevice } from "@svrooij/sonos/lib";
 import { PLAYING_OFFSET_MS } from "../lib/config";
 import { device, logger, sonosToSpotifyUri } from "./sonos";
+import { mutexRequest } from "../lib/mutexRequest";
 
 function timeStringToSeconds(time: string): number {
   const [hours, minutes, seconds] = time.split(":").map(Number);
@@ -39,23 +40,18 @@ function removeFromQueue(d: SonosDevice, index: number) {
   });
 }
 
-export async function getPlayingState(): Promise<boolean> {
-  let start = Date.now();
-  const d = await device();
-  const state = (await getState(d)) === "PLAYING";
-  logger.log(`getPlayingState() -> ${state} : ${Date.now() - start}ms`);
-  return state;
-}
+const getPlayingStateMutex = new mutexRequest(
+  logger,
+  "getPlayingState",
+  async () => {
+    const d = await device();
+    return (await getState(d)) === "PLAYING";
+  }
+);
+export const getPlayingState =
+  getPlayingStateMutex.execute.bind(getPlayingStateMutex);
 
-export async function getPlaying(): Promise<
-  | {
-      now: { spotifyUri: string; startDate: Date; duration_s: number };
-      next?: { spotifyUri: string };
-    }
-  | undefined
-> {
-  let start = Date.now();
-
+const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
   //TODO check unwanted pause
 
   const d = await device();
@@ -88,13 +84,12 @@ export async function getPlaying(): Promise<
       }
     }
 
-    logger.log(`getPlaying() OK : ${Date.now() - start}ms`);
     return { now, next };
   } catch (error) {
-    logger.error(`getPlaying() ERR: ${Date.now() - start}ms`);
     return undefined;
   }
-}
+});
+export const getPlaying = getPlayingMutex.execute.bind(getPlayingMutex);
 
 export async function applyNextSpotifyUri(uri: string): Promise<void> {
   let start = Date.now();
@@ -135,6 +130,7 @@ export async function applyNextSpotifyUri(uri: string): Promise<void> {
   }
 
   // add new track
+  logger.log(`applyNextSpotifyUri(${uri})...`);
   await d.AddUriToQueue(uri);
   logger.log(`applyNextSpotifyUri(${uri}): ${Date.now() - start}ms`);
 }

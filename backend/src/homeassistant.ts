@@ -8,8 +8,8 @@ import {
 import { ConsoleLogger } from "./lib/logger";
 import { getPlaying } from "./queue/getter";
 import { getSong } from "./spotify/songCache";
-import { getPlayingState } from "./sonos/sonosPlayControl";
 import { sameColor } from "./spotify/color";
+import usedPlayer from "./player/usedPlayer";
 export const logger = new ConsoleLogger("hass");
 
 let ha: HassApi | undefined;
@@ -44,13 +44,13 @@ export async function updateColor() {
       return;
     }
     let now = await getPlaying();
-    let isPlaying = await getPlayingState();
+    let isPaused = await usedPlayer.getPaused();
     if (!now) return (running = false);
     let song = await getSong(now.songUri);
 
-    let color: [number, number, number] = isPlaying
-      ? song.color
-      : [255, 255, 255];
+    let color: [number, number, number] = isPaused
+      ? [255, 255, 255]
+      : song.color;
 
     if (sameColor(color, lastColor) && Date.now() - lastUpdate < 1000 * 60)
       return (running = false);
@@ -61,9 +61,9 @@ export async function updateColor() {
     await Promise.all(
       entityArr.map(async (entity) => {
         if (!ha) return logger.warn("no connection to homeassistant");
-        // set random timeout between 0 and 3 seconds
+        // set random timeout
         await new Promise((resolve) =>
-          setTimeout(resolve, Math.random() * 1000 * 3)
+          setTimeout(resolve, Math.random() * 1000)
         );
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
@@ -77,7 +77,7 @@ export async function updateColor() {
   running = false;
 }
 
-setInterval(updateColor, 1000 * 3);
+// setInterval(updateColor, 1000 * 3);
 
 const entityArr = [
   {

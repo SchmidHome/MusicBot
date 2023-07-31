@@ -51,6 +51,10 @@ export class SpotifyPlayer extends Player {
     throw new Error("getPlayingState not implemented.");
   }
 
+  async getPaused(): Promise<boolean> {
+    throw new Error("getPaused not implemented.");
+  }
+
   async setNext(songUri: SongUri): Promise<void> {
     throw new Error("setNext not implemented.");
   }

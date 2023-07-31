@@ -9,7 +9,7 @@ export const lyricsRouter = Router();
 lyricsRouter.get("/lyrics", async (req, res) => {
   const playing = await getPlaying();
   if (!playing) return res.json(undefined);
-  const paused = (await usedPlayer.getPlayingState()).paused;
+  const paused = await usedPlayer.getPaused();
 
   const song = await getSong(playing.songUri);
 

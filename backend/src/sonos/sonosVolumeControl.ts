@@ -1,6 +1,7 @@
 import { SimpleCache } from "@idot-digital/simplecache";
 import { SONOS_DEVICE_NAME } from "../lib/config";
 import { device, logger } from "./sonos";
+import { mutexRequest } from "../lib/mutexRequest";
 
 const volumeCache = new SimpleCache(10000, async (_) => {
   logger.log("volumeCache update");
@@ -10,12 +11,17 @@ const volumeCache = new SimpleCache(10000, async (_) => {
   ).CurrentVolume;
 });
 
-export async function getVolume(): Promise<number> {
-  let start = Date.now();
-  let volume = (await volumeCache.get(""))!;
-  logger.log(`getVolume(): ${Date.now() - start}ms`);
-  return volume;
-}
+const getVolumeMutex = new mutexRequest(
+  logger,
+  "getVolume",
+  async () => {
+    const d = await device();
+    return (
+      await d.GroupRenderingControlService.GetGroupVolume({ InstanceID: 0 })
+    ).CurrentVolume;
+  }
+);
+export const getVolume = getVolumeMutex.execute.bind(getVolumeMutex);
 
 export async function setVolume(volume: number): Promise<boolean> {
   let start = Date.now();
@@ -43,5 +49,5 @@ async function applyVolume(volume: number) {
   return ret;
 }
 
-setTimeout(getVolume, 1000);
+// setTimeout(getVolume, 5000);
 // setInterval(applyVolume, 10000)

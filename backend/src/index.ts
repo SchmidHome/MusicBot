@@ -17,7 +17,7 @@ let nextCounter = 0;
 let updateOnChange: NodeJS.Timeout | undefined;
 
 async function checkPlaying() {
-  const { now, next, paused } = await usedPlayer.getPlayingState();
+  const { now, next } = await usedPlayer.getPlayingState();
 
   await sortQueue();
 
@@ -67,6 +67,7 @@ async function checkPlaying() {
 
     logger.debug(`time left:  ${timeLeft / 1000}s`);
 
+    const paused = await usedPlayer.getPaused();
     if (!queueNextSong && (timeLeft < 90 * 1000 || paused)) {
       // set new next
       const queue = await getQueued();

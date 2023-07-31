@@ -27,7 +27,6 @@ export class EmptyPlayer extends Player {
   async getPlayingState(): Promise<PlayingState> {
     this.logger.log("getPlayingState called");
     return {
-      paused: this.startDate === undefined,
       now: this.playing
         ? {
             songUri: this.playing.songUri,
@@ -36,6 +35,11 @@ export class EmptyPlayer extends Player {
         : undefined,
       next: this.next ? { songUri: this.next.songUri } : undefined,
     };
+  }
+
+  async getPaused(): Promise<boolean> {
+    this.logger.log("getPaused called");
+    return this.startDate === undefined;
   }
 
   async setNext(songUri: SongUri): Promise<void> {
