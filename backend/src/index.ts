@@ -104,7 +104,7 @@ async function checkPlaying(initial = false) {
     if (updateOnChange) clearTimeout(updateOnChange);
     updateOnChange = setTimeout(() => {
       checkPlaying();
-    }, timeLeft - 6500);
+    }, Math.max(timeLeft - 6500, 2000));
   } else {
     // initial start
     logger.log("initializing with first song");

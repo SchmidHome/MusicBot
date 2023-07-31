@@ -80,12 +80,12 @@ export async function updateColor() {
 // setInterval(updateColor, 1000 * 3);
 
 const entityArr = [
-  {
-    id: "light.01_garderobe_rand_rgb",
-  },
-  {
-    id: "light.06_kuewo_rgb",
-  },
+  // {
+  //   id: "light.01_garderobe_rand_rgb",
+  // },
+  // {
+  //   id: "light.06_kuewo_rgb",
+  // },
   // {
   //   id: "light.07_andi_rgb",
   // },
@@ -95,10 +95,10 @@ const entityArr = [
   {
     id: "light.13_johannes_licht",
   },
-  {
-    id: "light.11_gabriele_rgb",
-  },
-  {
-    id: "light.15_hwr_rgb",
-  },
+  // {
+  //   id: "light.11_gabriele_rgb",
+  // },
+  // {
+  //   id: "light.15_hwr_rgb",
+  // },
 ];
