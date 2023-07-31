@@ -3,15 +3,16 @@ import { getSong } from "../spotify/songCache";
 import { getNew, getNext, getPlaying, getQueued, getFullQueue } from "./getter";
 import { setPlayStartTime, setPosition } from "./setter";
 import { QueueElement } from "./types";
+import { number } from "zod";
 
 export async function sortQueue(elements?: WithId<QueueElement>[]) {
   //TODO use semaphore
   if (!elements) elements = [...(await getFullQueue()), ...(await getNew())];
 
   elements = elements.map((e) => {
-    if (e.type === "new") e.pos = 0;
+    if (e.type === "now") e.pos = 0;
     else if (e.type === "next") e.pos = 0.1;
-    else if (e.pos && e.pos < 1) e.pos = 0.5;
+    else if (typeof e.pos === "number" && e.pos < 1) e.pos = 0.5;
     return e;
   });
 
