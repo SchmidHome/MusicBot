@@ -16,7 +16,7 @@ let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
 
-async function checkPlaying() {
+async function checkPlaying(initial = false) {
   const { now, next } = await usedPlayer.getPlayingState();
 
   await sortQueue();
@@ -54,7 +54,7 @@ async function checkPlaying() {
       }
     }
     await setType(queuePlayingSong._id, "now");
-    if (oldQueuePlayingSong?._id !== queuePlayingSong._id) {
+    if (initial || oldQueuePlayingSong?._id !== queuePlayingSong._id) {
       await updateColor();
     }
 
@@ -122,6 +122,7 @@ async function checkPlaying() {
       }
       await setType(queuePlayingSong._id, "now");
     }
+    await updateColor();
     await usedPlayer.setNext(queuePlayingSong.songUri);
   }
 }
@@ -145,6 +146,6 @@ if (startArg) {
 } else {
   startAPI();
 
-  setTimeout(checkPlaying, 2 * 1000);
+  setTimeout(() => checkPlaying(true), 2 * 1000);
   setInterval(checkPlaying, 20 * 1000);
 }
