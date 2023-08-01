@@ -73,8 +73,17 @@ export async function getSongFromBackgroundPlaylist() {
     );
 
     if (song == undefined) {
-      loggerSpotify.warn(`No new track found`);
-      //TODO activate other playlists
+      loggerSpotify.warn(`No new track found, activating default playlist`);
+      let res = await backgroundPlaylists.updateOne(
+        { name: "Partymix" },
+        { $set: { selected: true } }
+      );
+      if (res.modifiedCount == 0) {
+        loggerSpotify.error(
+          `Activating default playlist failed, activating all playlists`
+        );
+        await backgroundPlaylists.updateMany({}, { $set: { selected: true } });
+      }
       return;
     }
     return song;
