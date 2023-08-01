@@ -5,8 +5,9 @@ import {
   SPOTIFY_CLIENT_SECRET,
   SPOTIFY_PLAYER_CODE,
 } from "../lib/config";
+import chalk from "chalk";
 
-export const loggerSpotify = new ConsoleLogger("spotify");
+export const loggerSpotify = new ConsoleLogger("spotify", chalk.greenBright);
 
 export const spotify = new SpotifyWebApi({
   clientId: SPOTIFY_CLIENT_ID,

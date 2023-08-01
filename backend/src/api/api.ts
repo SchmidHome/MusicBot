@@ -8,8 +8,9 @@ import { queueRouter } from "./queue";
 import { checkUser, getIp } from "../user";
 import { searchRouter } from "./search";
 import { lyricsRouter } from "./lyrics";
+import chalk from "chalk";
 
-export const loggerAPI = new ConsoleLogger("api");
+export const loggerAPI = new ConsoleLogger("api", chalk.red);
 
 const app = Express();
 app.use(cors({ origin: "*" }));

@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { startAPI } from "./api/api";
 import startHA, { updateColor } from "./homeassistant";
 import { ConsoleLogger } from "./lib/logger";
@@ -14,7 +15,7 @@ import { sortQueue, updateTime } from "./queue/sort";
 import { getSongFromBackgroundPlaylist } from "./spotify/backgroundPlaylist";
 import { getSong } from "./spotify/songCache";
 
-const logger = new ConsoleLogger("index");
+const logger = new ConsoleLogger("index", chalk.white);
 
 startHA();
 

@@ -1,8 +1,9 @@
 import z from "zod";
 import { Collection, Document, MongoClient } from "mongodb";
 import { ConsoleLogger } from "./lib/logger";
+import chalk from "chalk";
 
-const logger = new ConsoleLogger("mongodb");
+const logger = new ConsoleLogger("mongodb", chalk.magentaBright);
 
 export type Cached<T> = T & { validUntil: number };
 

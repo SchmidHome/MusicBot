@@ -1,8 +1,9 @@
 import { SonosManager } from "@svrooij/sonos/lib";
 import { ConsoleLogger } from "../lib/logger";
 import { SONOS_DEVICE_IP, SONOS_DEVICE_NAME } from "../lib/config";
+import chalk from "chalk";
 
-export const logger = new ConsoleLogger("sonos");
+export const logger = new ConsoleLogger("sonos", chalk.yellowBright);
 
 const manager = new SonosManager();
 manager.InitializeFromDevice(SONOS_DEVICE_IP).then(() => {

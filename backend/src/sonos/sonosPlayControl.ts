@@ -82,17 +82,6 @@ const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
       }
     }
 
-    if (info.track == 0 && info.secondsInTrack < 5 && next) {
-      // check if music is paused
-      const playing = await getPlayingState();
-      if (!playing) {
-        logger.error("MUSIC PAUSE DETECTED, STARTING NEXT SONG");
-        // start next song
-        await d.AVTransportService.Next();
-        await d.AVTransportService.Play({ InstanceID: 0, Speed: "1" });
-      }
-    }
-
     return { now, next };
   } catch (error) {
     return undefined;
@@ -141,5 +130,17 @@ export async function applyNextSpotifyUri(uri: string): Promise<void> {
   // add new track
   logger.log(`applyNextSpotifyUri(${uri})...`);
   await d.AddUriToQueue(uri);
+
+  if (info && info.track == 0 && info.secondsInTrack == 0) {
+    // check if music is paused
+    const playing = await getPlayingState();
+    if (!playing) {
+      logger.error("MUSIC PAUSE DETECTED, STARTING NEXT SONG");
+      // start next song
+      await d.AVTransportService.Next();
+      await d.AVTransportService.Play({ InstanceID: 0, Speed: "1" });
+    }
+  }
+
   logger.log(`applyNextSpotifyUri(${uri}): ${Date.now() - start}ms`);
 }

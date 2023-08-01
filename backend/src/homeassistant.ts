@@ -17,7 +17,8 @@ import {
   roundColor,
   scaleColor,
 } from "./color";
-export const logger = new ConsoleLogger("hass");
+import chalk from "chalk";
+export const logger = new ConsoleLogger("hass", chalk.blueBright);
 
 let ha: HassApi | undefined;
 export default async function startHA() {

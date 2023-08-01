@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 import { SongUri } from "../spotify/song";
-import { queueCollection } from "./queue";
+import { queueCollection, queueLogger } from "./queue";
 import { PositionType } from "./types";
-import { loggerQueue, sortQueue } from "./sort";
+import { sortQueue } from "./sort";
 
 export function setPlayStartTime(id: ObjectId, time: Date) {
   return queueCollection.updateOne(
@@ -29,7 +29,7 @@ export async function addSong(songUri: SongUri, addedBy?: string) {
       type: "new",
     })
   ).insertedId;
-  loggerQueue.log(`Added ${songUri} to queue`);
+  queueLogger.log(`Added ${songUri} to queue`);
   await sortQueue();
   return {
     songUri,

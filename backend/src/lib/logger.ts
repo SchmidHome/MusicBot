@@ -34,9 +34,10 @@ export class ConsoleLogger implements Logger {
 
   public readonly filename: string;
   public readonly color: Chalk;
-  public constructor(private name: string) {
+  public constructor(private name: string, color?: Chalk) {
     // select a foreground color and remove it from the list
     this.color =
+      color ||
       ConsoleLogger.colors[
         ConsoleLogger.counter++ % ConsoleLogger.colors.length
       ];
