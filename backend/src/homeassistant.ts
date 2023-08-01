@@ -10,6 +10,13 @@ import { getPlaying } from "./queue/getter";
 import { getSong } from "./spotify/songCache";
 import { sameColor } from "./spotify/color";
 import usedPlayer from "./player/usedPlayer";
+import {
+  HSLtoRGB,
+  RGBtoHSL,
+  rangeColor,
+  roundColor,
+  scaleColor,
+} from "./color";
 export const logger = new ConsoleLogger("hass");
 
 let ha: HassApi | undefined;
@@ -33,6 +40,7 @@ export default async function startHA() {
 let running = false;
 let lastColor: [number, number, number] | undefined = undefined;
 let lastUpdate: number = 0;
+let firstPause = true;
 export async function updateColor() {
   if (running) return logger.warn("updateColor already running");
   running = true;
@@ -45,12 +53,29 @@ export async function updateColor() {
     }
     let now = await getPlaying();
     let isPaused = await usedPlayer.getPaused();
+    if (firstPause && isPaused) {
+      firstPause = false;
+      isPaused = false;
+    } else if (!isPaused) {
+      firstPause = true;
+    }
     if (!now) return (running = false);
     let song = await getSong(now.songUri);
 
     let color: [number, number, number] = isPaused
       ? [255, 255, 255]
       : song.color;
+
+    // make colors more vib
+    let hsl = RGBtoHSL(color);
+    let hsl2 = { ...hsl };
+    // maximize saturation
+    hsl2.sat = Math.min(hsl.sat + 20, 100);
+    hsl2.lum = 50;
+    let colorSaturated = roundColor(scaleColor(rangeColor(HSLtoRGB(hsl2))));
+    logger.log(
+      `color: R${color[0]} G${color[1]} B${color[2]} -> H${hsl.hue} S${hsl.sat} L${hsl.lum} -> R${colorSaturated[0]} G${colorSaturated[1]} B${colorSaturated[2]}`
+    );
 
     if (sameColor(color, lastColor) && Date.now() - lastUpdate < 1000 * 60)
       return (running = false);
@@ -65,9 +90,11 @@ export async function updateColor() {
         await new Promise((resolve) =>
           setTimeout(resolve, Math.random() * 1000)
         );
+        let _color = colorSaturated;
+        if (entity.id === "light.06_esswo_rgb") _color = color;
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
-          rgbw_color: [color[0], color[1], color[2], 0],
+          rgbw_color: [_color[0], _color[1], _color[2], 0],
           transition: 5,
         });
       })
@@ -80,12 +107,18 @@ export async function updateColor() {
 setInterval(updateColor, 1000 * 5);
 
 const entityArr = [
-  // {
-  //   id: "light.01_garderobe_rand_rgb",
-  // },
+  {
+    id: "light.01_garderobe_rand_rgb",
+  },
   // {
   //   id: "light.06_kuewo_rgb",
   // },
+  {
+    id: "light.06_esswo_rgb",
+  },
+  {
+    id: "light.06_kuess_rgb",
+  },
   // {
   //   id: "light.07_andi_rgb",
   // },

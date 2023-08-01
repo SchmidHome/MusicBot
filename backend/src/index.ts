@@ -22,6 +22,8 @@ let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
 
+const QUEUE_LEN = 1;
+
 let running = false;
 async function checkPlaying(initial = false) {
   if (running) return logger.warn("checkPlaying already running");
@@ -98,7 +100,7 @@ async function checkPlaying(initial = false) {
       // add more songs to queue
       const queue = await getFullQueue();
       logger.debug(`queue length: ${queue.length}`);
-      if (queue.length < 5) {
+      if (queue.length < QUEUE_LEN) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {
           running = false;
