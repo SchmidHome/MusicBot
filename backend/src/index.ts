@@ -167,9 +167,15 @@ if (startArg) {
         process.exit(0);
       }, 1000);
       break;
-    default:
-      logger.error("Unknown argument");
+    case "--color":
+      startAPI();
+
+      setTimeout(() => checkPlaying(true), 2 * 1000);
+      setInterval(checkPlaying, 20 * 1000);
       break;
+    default:
+      logger.error("Unknown argument: " + startArg);
+      process.exit(1);
   }
 } else {
   startAPI();

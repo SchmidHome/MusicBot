@@ -57,6 +57,7 @@ export async function updateColor() {
     if (firstPause && isPaused) {
       firstPause = false;
       isPaused = false;
+      return (running = false);
     } else if (!isPaused) {
       firstPause = true;
     }
@@ -107,7 +108,7 @@ export async function updateColor() {
   running = false;
 }
 
-setInterval(updateColor, 1000 * 5);
+setInterval(updateColor, 1000 * 20);
 
 const entityArr = [
   {

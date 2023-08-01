@@ -17,6 +17,9 @@ export async function getPlaylist(uri: PlaylistUri) {
       loggerSpotify.log(`cached playlist ${uri}`);
       return playlist;
     } else {
+      let timeout = setTimeout(() => {
+        throw new Error("timeout");
+      });
       loggerSpotify.log(`loading playlist ${uri}`);
       const songs: Song[] = [];
       let offset = 0;
@@ -43,6 +46,7 @@ export async function getPlaylist(uri: PlaylistUri) {
         { $set: newPlaylist },
         { upsert: true }
       );
+      clearTimeout(timeout);
       return newPlaylist;
     }
   });
