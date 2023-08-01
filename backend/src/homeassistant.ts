@@ -95,10 +95,10 @@ const entityArr = [
   {
     id: "light.13_johannes_licht",
   },
-  // {
-  //   id: "light.11_gabriele_rgb",
-  // },
-  // {
-  //   id: "light.15_hwr_rgb",
-  // },
+  {
+    id: "light.11_gabriele_rgb",
+  },
+  {
+    id: "light.15_hwr_rgb",
+  },
 ];
