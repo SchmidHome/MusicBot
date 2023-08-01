@@ -76,12 +76,12 @@ export async function updateColor() {
       color = [255, 200, 100];
       colorSaturated = [255, 200, 100];
     }
-    logger.log(
-      `color: R${color[0]} G${color[1]} B${color[2]} -> H${hsl.hue} S${hsl.sat} L${hsl.lum} -> R${colorSaturated[0]} G${colorSaturated[1]} B${colorSaturated[2]}`
-    );
 
     if (sameColor(color, lastColor) && Date.now() - lastUpdate < 1000 * 60)
       return (running = false);
+    logger.log(
+      `color: R${color[0]} G${color[1]} B${color[2]} -> H${hsl.hue} S${hsl.sat} L${hsl.lum} -> R${colorSaturated[0]} G${colorSaturated[1]} B${colorSaturated[2]}`
+    );
     lastColor = color;
     lastUpdate = Date.now();
     logger.log(`updating color to R${color[0]} G${color[1]} B${color[2]}`);
