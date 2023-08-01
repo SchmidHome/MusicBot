@@ -62,9 +62,7 @@ export async function updateColor() {
     if (!now) return (running = false);
     let song = await getSong(now.songUri);
 
-    let color: [number, number, number] = isPaused
-      ? [255, 255, 255]
-      : song.color;
+    let color: [number, number, number] = song.color;
 
     // make colors more vib
     let hsl = RGBtoHSL(color);
@@ -73,6 +71,10 @@ export async function updateColor() {
     hsl2.sat = Math.min(hsl.sat + 20, 100);
     hsl2.lum = 50;
     let colorSaturated = roundColor(scaleColor(rangeColor(HSLtoRGB(hsl2))));
+    if (isPaused) {
+      color = [255, 200, 100];
+      colorSaturated = [255, 200, 100];
+    }
     logger.log(
       `color: R${color[0]} G${color[1]} B${color[2]} -> H${hsl.hue} S${hsl.sat} L${hsl.lum} -> R${colorSaturated[0]} G${colorSaturated[1]} B${colorSaturated[2]}`
     );
