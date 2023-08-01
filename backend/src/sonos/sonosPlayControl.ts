@@ -52,8 +52,6 @@ export const getPlayingState =
   getPlayingStateMutex.execute.bind(getPlayingStateMutex);
 
 const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
-  //TODO check unwanted pause
-
   const d = await device();
   try {
     const s_now = Date.now();
@@ -81,6 +79,17 @@ const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
         } catch (error) {
           logger.error(`Error removing tracks from queue: ${error}`);
         }
+      }
+    }
+
+    if (info.track == 0 && info.secondsInTrack < 5 && next) {
+      // check if music is paused
+      const playing = await getPlayingState();
+      if (!playing) {
+        logger.error("MUSIC PAUSE DETECTED, STARTING NEXT SONG");
+        // start next song
+        await d.AVTransportService.Next();
+        await d.AVTransportService.Play({ InstanceID: 0, Speed: "1" });
       }
     }
 

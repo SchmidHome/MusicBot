@@ -7,7 +7,7 @@ import { number } from "zod";
 
 export async function sortQueue(elements?: WithId<QueueElement>[]) {
   //TODO use semaphore
-  if (!elements) elements = [...(await getFullQueue()), ...(await getNew())];
+  if (!elements) elements = await getFullQueue();
 
   elements = elements.map((e) => {
     if (e.type === "now") e.pos = 0;
@@ -35,7 +35,7 @@ export async function sortQueue(elements?: WithId<QueueElement>[]) {
 }
 
 export async function resortQueue(_id: ObjectId, posChange: number) {
-  let elements = [...(await getFullQueue()), ...(await getNew())];
+  let elements = await getFullQueue();
 
   if (posChange > 0) posChange += 0.5;
   if (posChange < 0) posChange -= 0.5;

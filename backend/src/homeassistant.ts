@@ -77,7 +77,7 @@ export async function updateColor() {
   running = false;
 }
 
-// setInterval(updateColor, 1000 * 3);
+setInterval(updateColor, 1000 * 5);
 
 const entityArr = [
   // {

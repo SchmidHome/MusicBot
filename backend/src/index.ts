@@ -2,7 +2,13 @@ import { startAPI } from "./api/api";
 import startHA, { updateColor } from "./homeassistant";
 import { ConsoleLogger } from "./lib/logger";
 import usedPlayer from "./player/usedPlayer";
-import { getNew, getNext, getPlaying, getQueued } from "./queue/getter";
+import {
+  getFullQueue,
+  getNew,
+  getNext,
+  getPlaying,
+  getQueued,
+} from "./queue/getter";
 import { addSong, setPlayStartTime, setType } from "./queue/setter";
 import { sortQueue, updateTime } from "./queue/sort";
 import { getSongFromBackgroundPlaylist } from "./spotify/backgroundPlaylist";
@@ -16,7 +22,10 @@ let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
 
+let running = false;
 async function checkPlaying(initial = false) {
+  if (running) return logger.warn("checkPlaying already running");
+  running = true;
   const { now, next } = await usedPlayer.getPlayingState();
 
   await sortQueue();
@@ -78,12 +87,25 @@ async function checkPlaying(initial = false) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {
           logger.error("no next, no queue, default playlist empty");
+          running = false;
           return;
         }
         queueNextSong = await addSong(newSong.songUri);
         logger.log("add next from default playlist");
       }
       await setType(queueNextSong._id, "next");
+    } else {
+      // add more songs to queue
+      const queue = await getFullQueue();
+      if (queue.length < 5) {
+        const newSong = await getSongFromBackgroundPlaylist();
+        if (!newSong) {
+          running = false;
+          return;
+        }
+        await addSong(newSong.songUri);
+        logger.log("add song from default playlist");
+      }
     }
 
     if (nextCounter > 0) nextCounter--;
@@ -115,6 +137,7 @@ async function checkPlaying(initial = false) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {
           logger.error("no next, no queue, default playlist empty");
+          running = false;
           return;
         }
         queuePlayingSong = await addSong(newSong.songUri);
@@ -125,6 +148,7 @@ async function checkPlaying(initial = false) {
     await updateColor();
     await usedPlayer.setNext(queuePlayingSong.songUri);
   }
+  running = false;
 }
 
 // check arguments
