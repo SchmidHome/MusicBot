@@ -10,9 +10,9 @@
     "serve": "tsc && node out/index.js",
     "dev": "nodemon src/index.ts",
     "check-db": "ts-node src/index.ts check-db",
-    "pm2-start": "pm2 start out/index.js --name musicbot",
-    "pm2-watch": "pm2 start out/index.js --name musicbot --watch out/*",
-    "pm2-stop": "pm2 stop musicbot",
+    "pm2-start": "pm2 start out/index.js --name musicbot -- --color",
+    "pm2-watch": "pm2 start out/index.js --name musicbot --watch out/* -- --color",
+    "pm2-stop": "pm2 stop musicbot && pm2 delete musicbot",
     "pm2-restart": "pm2 restart musicbot",
     "pm2-log": "pm2 logs musicbot"
   },
