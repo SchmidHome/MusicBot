@@ -22,9 +22,10 @@ queueRouter.get("/playing", async (req, res) => {
 
 queueRouter.get("/queue", async (req, res) => {
   const queue = await getFullQueue();
-  queue.shift();
   const songQueue = await Promise.all(
-    queue.map(async (song) => ({ ...song, ...(await getSong(song.songUri)) }))
+    queue
+      .filter((song) => song.type != "now")
+      .map(async (song) => ({ ...song, ...(await getSong(song.songUri)) }))
   );
   res.status(200).json(songQueue);
 });
