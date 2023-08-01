@@ -97,6 +97,7 @@ async function checkPlaying(initial = false) {
     } else {
       // add more songs to queue
       const queue = await getFullQueue();
+      logger.debug(`queue length: ${queue.length}`);
       if (queue.length < 5) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {

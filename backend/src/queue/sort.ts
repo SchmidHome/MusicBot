@@ -6,7 +6,7 @@ import { QueueElement } from "./types";
 import { Mutex } from "async-mutex";
 import { ConsoleLogger } from "../lib/logger";
 
-const logger = new ConsoleLogger("queue");
+export const loggerQueue = new ConsoleLogger("queue");
 
 async function _sortQueue(elements?: WithId<QueueElement>[]) {
   if (!elements) elements = await getFullQueue();
@@ -30,7 +30,7 @@ async function _sortQueue(elements?: WithId<QueueElement>[]) {
 
   await Promise.all(
     elements.map(async (e, i) => {
-      if (e.type === "new") return setPosition(e._id, 0, "queued");
+      if (e.type === "new") return setPosition(e._id, i, "queued");
       return setPosition(e._id, i);
     })
   );
@@ -39,13 +39,13 @@ async function _sortQueue(elements?: WithId<QueueElement>[]) {
 const sortMutex = new Mutex();
 export async function sortQueue() {
   return sortMutex.runExclusive(async () => {
-    logger.log("sortQueue()");
+    loggerQueue.log("sortQueue()");
     await _sortQueue();
   });
 }
 export async function resortQueue(_id: ObjectId, posChange: number) {
   return sortMutex.runExclusive(async () => {
-    logger.log("resortQueue()");
+    loggerQueue.log("resortQueue()");
     let elements = await getFullQueue();
 
     if (posChange > 0) posChange += 0.5;
