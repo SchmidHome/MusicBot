@@ -4,13 +4,10 @@ import { getNext, getPlaying, getQueued, getFullQueue } from "./getter";
 import { setPlayStartTime, setPosition } from "./setter";
 import { QueueElement } from "./types";
 import { Mutex } from "async-mutex";
+import { ConsoleLogger } from "../lib/logger";
 
-const sortMutex = new Mutex();
-export async function sortQueue() {
-  return sortMutex.runExclusive(async () => {
-    await _sortQueue();
-  });
-}
+const logger = new ConsoleLogger("queue");
+
 async function _sortQueue(elements?: WithId<QueueElement>[]) {
   if (!elements) elements = await getFullQueue();
 
@@ -39,8 +36,16 @@ async function _sortQueue(elements?: WithId<QueueElement>[]) {
   );
 }
 
+const sortMutex = new Mutex();
+export async function sortQueue() {
+  return sortMutex.runExclusive(async () => {
+    logger.log("sortQueue()");
+    await _sortQueue();
+  });
+}
 export async function resortQueue(_id: ObjectId, posChange: number) {
   return sortMutex.runExclusive(async () => {
+    logger.log("resortQueue()");
     let elements = await getFullQueue();
 
     if (posChange > 0) posChange += 0.5;
