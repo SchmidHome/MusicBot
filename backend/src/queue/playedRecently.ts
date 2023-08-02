@@ -31,15 +31,15 @@ export async function playedRecently(song: Song) {
         element.playStartTime &&
         element.playStartTime.getTime() + 1000 * 60 * 60 * 6 > now.getTime()
       ) {
-        // fireflies can be played all 2 hours
         if (
           song.name === "Fireflies" &&
-          element.playStartTime.getTime() + 1000 * 60 * 60 * 2 > now.getTime()
+          element.playStartTime.getTime() + 1000 * 60 * 60 * 2 < now.getTime()
         ) {
           return false;
         }
         return true;
       }
+      // fireflies can be played all 2 hours
     } else if (element.type === "removed") {
       // ignore removed songs
     } else {
