@@ -47,7 +47,7 @@ export class SpotifyPlayer extends Player {
     await spotify.setVolume(volume);
   }
 
-  async getPlayingState(): Promise<PlayingState> {
+  async getPlaying(): Promise<PlayingState> {
     throw new Error("getPlayingState not implemented.");
   }
 

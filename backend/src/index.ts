@@ -30,7 +30,7 @@ let running = false;
 async function checkPlaying(initial = false) {
   if (running) return logger.warn("checkPlaying already running");
   running = true;
-  const { now, next } = await usedPlayer.getPlayingState();
+  const { now, next } = await usedPlayer.getPlaying();
 
   await sortQueue();
 

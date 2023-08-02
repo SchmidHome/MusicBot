@@ -43,61 +43,68 @@ function removeFromQueue(d: SonosDevice, index: number) {
 const getPlayingStateMutex = new mutexRequest(
   logger,
   "getPlayingState",
+  1000 * 5,
   async () => {
     const d = await device();
-    return (await getState(d)) === "PLAYING";
+    const state = (await getState(d)) === "PLAYING";
+    return state;
   }
 );
 export const getPlayingState =
   getPlayingStateMutex.execute.bind(getPlayingStateMutex);
 
-const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
-  const d = await device();
-  try {
-    const s_now = Date.now();
-    const info = await getPositionInfo(d);
-    const queue = await getQueue(d);
+const getPlayingMutex = new mutexRequest(
+  logger,
+  "getPlaying",
+  1000 * 10,
+  async () => {
+    const d = await device();
+    try {
+      const s_now = Date.now();
+      const info = await getPositionInfo(d);
+      const queue = await getQueue(d);
 
-    if (!info) return undefined;
+      if (!info) return undefined;
 
-    const offset = Number(PLAYING_OFFSET_MS) || 0;
-    const now = {
-      spotifyUri: info.uri,
-      startDate: new Date(s_now - info.secondsInTrack * 1000 + offset),
-      duration_s: info.duration_s,
-    };
-    let next = undefined;
-    if (queue.length > info.track + 1) {
-      next = {
-        spotifyUri: queue[info.track + 1],
+      const offset = Number(PLAYING_OFFSET_MS) || 0;
+      const now = {
+        spotifyUri: info.uri,
+        startDate: new Date(s_now - info.secondsInTrack * 1000 + offset),
+        duration_s: info.duration_s,
       };
-      if (queue.length > info.track + 2) {
-        // purge unwanted tracks
-        try {
-          for (let i = queue.length - 1; i > info.track + 1; i--)
-            await removeFromQueue(d, i);
-        } catch (error) {
-          logger.error(`Error removing tracks from queue: ${error}`);
+      let next = undefined;
+      if (queue.length > info.track + 1) {
+        next = {
+          spotifyUri: queue[info.track + 1],
+        };
+        if (queue.length > info.track + 2) {
+          // purge unwanted tracks
+          try {
+            for (let i = queue.length - 1; i > info.track + 1; i--)
+              await removeFromQueue(d, i);
+          } catch (error) {
+            logger.error(`Error removing tracks from queue: ${error}`);
+          }
         }
       }
-    }
 
-    if (info.track == 0 && info.secondsInTrack == 0) {
-      // check if music is paused
-      const playing = await getPlayingState();
-      if (!playing) {
-        logger.error("MUSIC PAUSE DETECTED, REMOVING NEXT SONG");
-        // remove next song
-        await removeFromQueue(d, 1);
-        next = undefined;
+      if (info.track == 0 && info.secondsInTrack == 0) {
+        // check if music is paused
+        const playing = await getPlayingState();
+        if (!playing) {
+          logger.error("MUSIC PAUSE DETECTED, REMOVING NEXT SONG");
+          // remove next song
+          await removeFromQueue(d, 1);
+          next = undefined;
+        }
       }
-    }
 
-    return { now, next };
-  } catch (error) {
-    return undefined;
+      return { now, next };
+    } catch (error) {
+      return undefined;
+    }
   }
-});
+);
 export const getPlaying = getPlayingMutex.execute.bind(getPlayingMutex);
 
 export async function applyNextSpotifyUri(uri: string): Promise<void> {

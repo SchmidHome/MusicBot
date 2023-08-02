@@ -24,7 +24,7 @@ export class EmptyPlayer extends Player {
   private startDate?: Date;
   private playing?: Song;
   private next?: Song;
-  async getPlayingState(): Promise<PlayingState> {
+  async getPlaying(): Promise<PlayingState> {
     this.logger.log("getPlayingState called");
     return {
       now: this.playing

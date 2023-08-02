@@ -14,6 +14,7 @@ const volumeCache = new SimpleCache(10000, async (_) => {
 const getVolumeMutex = new mutexRequest(
   logger,
   "getVolume",
+  1000 * 5,
   async () => {
     const d = await device();
     return (
@@ -26,7 +27,7 @@ export const getVolume = getVolumeMutex.execute.bind(getVolumeMutex);
 export async function setVolume(volume: number): Promise<boolean> {
   let start = Date.now();
   // targetVolume = volume
-  let res =  await applyVolume(volume);
+  let res = await applyVolume(volume);
   logger.log(`setVolume(${volume}): ${Date.now() - start}ms`);
   return res;
 }

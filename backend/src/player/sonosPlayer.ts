@@ -13,7 +13,7 @@ export class SonosPlayer extends Player {
     return setVolume(volume).then(() => {});
   }
 
-  async getPlayingState(): Promise<PlayingState> {
+  async getPlaying(): Promise<PlayingState> {
     const playing = await getPlaying();
     logger.log(
       `now: ${playing?.now?.spotifyUri}, next: ${playing?.next?.spotifyUri}`

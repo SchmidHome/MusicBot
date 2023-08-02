@@ -9,7 +9,7 @@ export abstract class Player {
   abstract getVolume(): Promise<number>;
   abstract setVolume(volume: number): Promise<void>;
 
-  abstract getPlayingState(): Promise<PlayingState>;
+  abstract getPlaying(): Promise<PlayingState>;
   abstract getPaused(): Promise<boolean>;
   abstract setNext(song: SongUri): Promise<void>;
 }
