@@ -42,7 +42,10 @@ export async function customFetch<T>(
       ...rest,
     });
 
-    if (res.status >= 500) throw new Error(await res.text());
+    if (res.status >= 500) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return customFetch(route, { method, body, headers, ...rest });
+    }
 
     const data = await (() => {
       if (res.headers.get("Content-Type")?.includes("application/json"))
