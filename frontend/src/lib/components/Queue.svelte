@@ -1,6 +1,6 @@
 <script lang="ts">
   import Song from "./Song.svelte";
-  import queue from "global/queue";
+  import queue from "$data/queue";
   export let displayedSongs = 5;
 </script>
 
@@ -38,6 +38,7 @@
     width: 100%
     margin-top: $spacing
     padding: $spacing
+    box-sizing: border-box
   
   .more
     --size: 3vmax

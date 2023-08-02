@@ -1,16 +1,30 @@
-export interface Song {
+type SongElement = {
+  songUri: string;
   name: string;
   artist: string;
-  coverURL: string;
-  dj: string | null;
-  songDurationMs: number;
-  startDate: Date | null;
-  voteSummary: number | null;
-}
+  album: string;
+  imageUri: string;
+  duration_ms: number;
+};
 
-export interface CurrentSong extends Song {
-  positionInTrack: number;
-}
+type QueueElement = SongElement & {
+  // Element info
+  _id: ObjectId;
+  type: "new" | "queued" | "next" | "now" | "played" | "removed";
+  playStartTime?: Date | undefined;
+  pos?: number | undefined;
+  addedBy?: string | null | undefined;
+};
+
+type PlayingElement = QueueElement & {
+  paused: boolean;
+  type: "now";
+  pos: 0;
+};
+
+type LyricsElement = PlayingElement & {
+  lyrics: Lyrics;
+};
 
 export interface Lyric {
   startTimeMs: number;

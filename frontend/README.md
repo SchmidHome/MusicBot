@@ -12,7 +12,6 @@ Following environment variables can be used (only `PUBLIC_SERVER_URL` is mandato
   // base url for the server serving the api ("/playing", "/queue"...)
   PUBLIC_SERVER_URL: string = "http://localhost:3000",
   // this is set to "true" while in dev mode (e.g. when running "yarn dev")
-  PUBLIC_MOCK_SERVER: "true" | "false" = "false",
   // all fetch times are in miliseconds
   PUBLIC_VOLUME_FETCH_INTERVAL: number = 3000,
   PUBLIC_QUEUE_FETCH_INTERVAL: number = 3000,
@@ -28,6 +27,4 @@ You can change the environment variables in the `.env.production` in the root fo
 Following query parameters are possible to change the behavior of the site. All query parameters are optional.
 
 1. `qr`: link the QR code goes to (e.g. `?qr=https%3A%2F%2Ft.me%2FMusicHomeBot`)
-2. `vote`: link the vote button goes to (e.g. `?vote=https%3A%2F%2Ft.me%2FMusicHomeBot`)
-3. `lyrics`: `"true" | "false"` whether to show the lyrics or not (e.g. `?lyrics=true`)
-4. `only-lyrics`: `"true" | "false"` whether to show only the lyrics or default view (e.g. `?only-lyrics=true`)
+2. `lyrics`: `"true" | "false"` whether to show the fullscreen lyrics view (e.g. `?lyrics=true`)

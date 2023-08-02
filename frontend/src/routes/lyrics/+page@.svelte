@@ -1,13 +1,14 @@
 <script lang="ts">
-  import Back from "assets/back.svelte";
-  import Lyrics from "components/Lyrics.svelte";
-  import Song from "components/Song.svelte";
-  import currentSong from "global/currentSong";
-  import portrait from "global/portrait";
-  import queue from "global/queue";
-  import { urlParams } from "global/urlParams";
+  import Back from "$assets/back.svelte";
+  import Lyrics from "$lib/components/Lyrics.svelte";
+  import Song from "$lib/components/Song.svelte";
+  import currentSong from "$data/currentSong";
+  import usePortrait from "$data/portrait";
+  import queue from "$data/queue";
+  import { urlParams } from "$data/urlParams";
 
   const lyrics = urlParams.get("lyrics");
+  const portrait = usePortrait();
 </script>
 
 <main class="main" class:lyrics>
@@ -17,8 +18,7 @@
       on:click={() => {
         window.location.href =
           window.location.origin + window.location.pathname;
-      }}
-    >
+      }}>
       <Back height=".9em" width=".9em" />
       Zurück
     </button>
@@ -26,8 +26,8 @@
 
   {#if !$portrait}
     <div class="currentSong">
-      <h1>{$currentSong.name}</h1>
-      <h2>{$currentSong.artist}</h2>
+      <h1>{$currentSong?.name}</h1>
+      <h2>{$currentSong?.artist}</h2>
     </div>
   {/if}
 
@@ -35,7 +35,8 @@
     <Lyrics />
   </div>
 
-  {#if !$portrait && $queue.length}
+  {#if !$portrait && $queue.length && $queue[0].playStartTime ? $queue[0].playStartTime.getTime() < Date.now() + 1000 * 30 : $currentSong && $currentSong.duration_ms - $currentSong.songPos < 1000 * 30}
+    <!-- only show if playing in the next 25 seconds -->
     <div class="nextSong">
       <span class="nextSong_label">Nächster Song</span>
       <div class="nextSong_song">
@@ -45,8 +46,7 @@
   {/if}
   <div
     class="background"
-    style:background-image={`url(${$currentSong.coverURL})`}
-  />
+    style:background-image={`url(${$currentSong?.imageUri})`} />
 </main>
 
 <style lang="sass">
@@ -72,6 +72,10 @@
     top: $spacing
     left: $spacing
     z-index: 1
+    opacity: .25
+    transition: opacity .2s ease-in-out
+    &:hover
+      opacity: 1
 
     @media (orientation: landscape)
       top: unset

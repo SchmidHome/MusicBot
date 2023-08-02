@@ -45,7 +45,7 @@ export async function customFetch<T>(
     if (res.status >= 500) throw new Error(await res.text());
 
     const data = await (() => {
-      if (res.headers.get("Content-Type").includes("application/json"))
+      if (res.headers.get("Content-Type")?.includes("application/json"))
         return res.json();
       return res.text();
     })();
@@ -56,6 +56,7 @@ export async function customFetch<T>(
   } catch (e) {
     console.error("Error while fetching", e);
     connectionError.set(true);
+    //@ts-ignore
     return null;
   }
 }

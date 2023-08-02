@@ -1,28 +1,27 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Svelte",
-  "_version": "3.0.0",
-
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "es2019",
-    "module": "ESNext",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    /**
-      To have warnings/errors of the Svelte compiler at the correct position,
-      enable source maps by default.
-     */
-    "sourceMap": true,
-
-    "strict": false,
+    "allowJs": true,
+    "checkJs": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
     "paths": {
-      "global/*": ["./src/global/*"],
-      "assets/*": ["./src/assets/*"],
-      "components/*": ["./src/components/*"]
+      "/": ["./src"],
+      "/*": ["./src/*"],
+      "$data": ["./src/data"],
+      "$data/*": ["./src/data/*"],
+      "$assets": ["./src/assets"],
+      "$assets/*": ["./src/assets/*"],
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"]
     }
   }
+  // Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
+  //
+  // If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes
+  // from the referenced tsconfig.json - TypeScript does not merge them in
 }

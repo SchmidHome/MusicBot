@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Song as SongType } from "../types.d";
+  import type { SongElement as SongType } from "../../types.d";
 
   export let song: SongType;
 
@@ -7,13 +7,13 @@
 
   $: waitingTimeString =
     song.startDate !== undefined
-      ? new Date(song.startDate).toLocaleTimeString("de-DE")
+      ? new Date(song.startDate ?? Date.now()).toLocaleTimeString("de-DE")
       : "Jetzt";
 </script>
 
 <div class="wrapper">
   <div class="text-wrapper">
-    <div class="cover" style:background-image={"url(" + song.coverURL + ")"} />
+    <div class="cover" style:background-image={"url(" + song.imageUri + ")"} />
     <div class="info-outer">
       <div class="song-info__left">
         <div class="song-info__left--inner">

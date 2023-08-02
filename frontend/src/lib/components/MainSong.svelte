@@ -1,38 +1,42 @@
 <script lang="ts">
   import ProgressBar from "./ProgressBar.svelte";
-  import { getTimeStringFromMS } from "global/functions";
-  import currentSong from "global/currentSong";
+  import { getTimeStringFromMS } from "$data/functions";
+  import currentSong from "$data/currentSong";
 
-  $: durationString = getTimeStringFromMS($currentSong.songDurationMs);
+  $: durationString = $currentSong
+    ? getTimeStringFromMS($currentSong.duration_ms)
+    : "";
 
-  $: positionInTrackString = getTimeStringFromMS($currentSong.positionInTrack);
+  $: positionInTrackString = $currentSong
+    ? getTimeStringFromMS($currentSong.songPos)
+    : "";
+
+  $: songPercentage =
+    (($currentSong?.songPos ?? 0) / ($currentSong?.duration_ms ?? 1)) * 100;
 </script>
 
 <div class="wrapper">
   <div
     class="cover"
-    style:background-image={"url(" + $currentSong.coverURL + ")"}
-  />
+    style:background-image={"url(" + $currentSong?.imageUri + ")"} />
 
   <div class="lower-wrapper">
     <div class="title-wrapper">
-      <h1 class="title">{$currentSong.name}</h1>
+      <h1 class="title">{$currentSong?.name}</h1>
     </div>
     <div class="subtitle">
-      <span class="artist">{$currentSong.artist}</span>
-      {#if $currentSong.dj}
-        <span class="added-by">Hinzugefügt von {$currentSong.dj}</span>
+      <span class="artist">{$currentSong?.artist}</span>
+      {#if $currentSong?.addedBy}
+        <span class="added-by">Hinzugefügt von {$currentSong.addedBy}</span>
       {/if}
     </div>
 
     <ProgressBar
-      percentage={($currentSong.positionInTrack / $currentSong.songDurationMs) *
-        100}
+      percentage={songPercentage}
       startLabel={positionInTrackString}
       endLabel={durationString}
       --height=".5em"
-      --fill="var(--text-low)"
-    />
+      --fill="var(--text-low)" />
   </div>
 </div>
 

@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import portrait from "global/portrait";
+  import usePortrait from "$data/portrait";
+
+  const portrait = usePortrait();
 
   export let big: boolean = false;
 
   let time = new Date();
 
   onMount(() => {
-    let setNow;
+    let setNow: number;
     function setNowInterval() {
       if (setNow) clearInterval(setNow);
       setNow = setInterval(() => {

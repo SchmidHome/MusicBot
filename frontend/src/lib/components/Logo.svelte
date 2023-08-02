@@ -1,8 +1,6 @@
 <script lang="ts">
-  import Music from "../assets/music.svelte";
+  import Music from "$assets/music.svelte";
   import SquareGrow from "./SquareGrow.svelte";
-
-  let wrapperEle: HTMLDivElement;
 </script>
 
 <SquareGrow>

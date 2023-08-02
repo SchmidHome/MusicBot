@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { connectionError } from "../global/connectionError";
-  import Logo from "../components/Logo.svelte";
-  import MainSong from "../components/MainSong.svelte";
-  import QrCode from "../components/QRCode.svelte";
-  import Queue from "../components/Queue.svelte";
-  import Time from "../components/Time.svelte";
-  import Volume from "../components/Volume.svelte";
+  import Logo from "$lib/components/Logo.svelte";
+  import Time from "$lib/components/Time.svelte";
+  import QrCode from "$lib/components/QRCode.svelte";
+  import MainSong from "$lib/components/MainSong.svelte";
+  import Queue from "$lib/components/Queue.svelte";
+  import Volume from "$lib/components/Volume.svelte";
+  import { connectionError } from "$data/connectionError";
+  import { goto } from "$app/navigation";
 </script>
 
 <main class="main">
@@ -29,10 +30,8 @@
       <button
         class="lyrics-btn btn"
         on:click={() => {
-          window.location.href =
-            window.location.origin + window.location.pathname + "?lyrics=true";
-        }}
-      >
+          goto("/lyrics");
+        }}>
         Lyrics
       </button>
     </div>

@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import type { Lyrics } from "../types";
 import currentSong from "./currentSong";
 import { customFetch } from "./functions";
+import { browser } from "$app/environment";
 
 export const lyrics = writable<Lyrics>({
   error: true,
@@ -1063,7 +1064,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
     const newLyrics = possibleLyrics[3];
     lyrics.set(newLyrics);
 
-    window.lyrics = newLyrics;
+    if (browser) window.lyrics = newLyrics;
 
     return newLyrics;
   } else {
@@ -1091,7 +1092,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
 
     lyrics.set(newLyrics);
 
-    window.lyrics = newLyrics;
+    if (browser) window.lyrics = newLyrics;
 
     return newLyrics;
   }
@@ -1100,7 +1101,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
 // refresh lyrics instantly when song changes
 let lastSongName = "";
 currentSong.subscribe((song) => {
-  if (song.name !== lastSongName) {
+  if (song && song.name !== lastSongName) {
     refreshLyrics();
     lastSongName = song.name;
   }

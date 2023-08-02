@@ -1,7 +1,7 @@
 <script lang="ts">
-  import lyrics from "global/lyrics";
-  import currentSong from "global/currentSong";
-  import type { SyncedLyrics, UnsyncedLyrics } from "../types";
+  import lyrics from "$data/lyrics";
+  import currentSong from "$data/currentSong";
+  import type { SyncedLyrics, UnsyncedLyrics } from "../../types.d";
 
   let currentLineEle: HTMLElement | null = null;
 
@@ -10,14 +10,15 @@
     let currentLyrics = $lyrics as SyncedLyrics | UnsyncedLyrics;
     if (currentLyrics.syncType === "LINE_SYNCED") {
       let index = currentLyrics.lines.findIndex(
-        (line) => line.startTimeMs >= $currentSong.positionInTrack
+        (line) => line.startTimeMs >= ($currentSong?.positionInTrack ?? 0)
       );
       if (index === 0) return -1;
       if (index === -1) return currentLyrics.lines.length;
       return index - 1;
     } else if (currentLyrics.syncType === "UNSYNCED") {
-      const songPercentage =
-        $currentSong.positionInTrack / $currentSong.songDurationMs;
+      const songPercentage = $currentSong
+        ? $currentSong.positionInTrack / $currentSong.songDurationMs
+        : 0;
       const lyricsPercentage = currentLyrics.lines.length * songPercentage;
       return Math.floor(lyricsPercentage);
     }
@@ -48,8 +49,7 @@
           <!-- dont highligh current when not synced -->
           <p
             class:current={$lyrics.syncType === "LINE_SYNCED"}
-            bind:this={currentLineEle}
-          >
+            bind:this={currentLineEle}>
             {line.words}
           </p>
         {:else}
@@ -96,7 +96,7 @@
     color: $text-low
     &.current
       color: $text
-      margin: calc($spacing * 4) 0
+      margin: calc($spacing * 2) 0
 
   .padding_element
     height: 100%

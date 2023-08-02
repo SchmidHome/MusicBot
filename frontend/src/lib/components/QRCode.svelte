@@ -1,20 +1,25 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import SquareGrow from "./SquareGrow.svelte";
-  import QrCreator from "qr-creator";
+  import { browser } from "$app/environment";
 
-  const urlParams = new URLSearchParams(window.location.search);
+  let QrCreator: any | null = null;
+  onMount(async () => {
+    QrCreator = (await import("qr-creator")).default;
+  });
+
+  const urlParams = new URLSearchParams(browser ? window.location.search : "");
   const qr = urlParams.get("qr");
 
   export let link: string = "";
   let wrapper: HTMLButtonElement;
   $: src =
-    link ||
-    qr ||
-    import.meta.env.PUBLIC_DEFAULT_QR_LINK ||
-    window.location.href;
+    link || qr || import.meta.env.PUBLIC_DEFAULT_QR_LINK || browser
+      ? window.location.href
+      : "";
 
   $: if (wrapper)
-    QrCreator.render(
+    QrCreator?.render(
       {
         text: src,
         radius: 0.5,
@@ -32,8 +37,7 @@
     class="wrapper"
     on:click={() => window.open(src, "_self")}
     on:keydown={() => window.open(src, "_self")}
-    bind:this={wrapper}
-  />
+    bind:this={wrapper} />
 </SquareGrow>
 
 <style lang="sass">

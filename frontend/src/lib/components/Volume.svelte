@@ -1,5 +1,5 @@
 <script>
-  import volume from "global/volume";
+  import volume from "$data/volume";
   import ProgressBar from "./ProgressBar.svelte";
 </script>
 

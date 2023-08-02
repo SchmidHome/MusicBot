@@ -1,12 +1,12 @@
-import type { CurrentSong, Lyrics, Song } from "./types";
+import type { PlayingElement, Lyrics, QueueElement } from "./types";
 
 declare global {
   interface Window {
     toggleConnectionError: () => void;
-    queue: Song[];
+    queue: QueueElement[];
     volume: number;
     lyrics: Lyrics;
-    currentSong: CurrentSong;
+    currentSong: PlayingElement;
   }
 }
 
