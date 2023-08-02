@@ -20,18 +20,24 @@ export async function playedRecently(song: Song) {
     .find({ songUri: song.songUri })
     .toArray();
   if (elements.length === 0) {
-    
     return false;
   }
 
   let now = new Date();
   for (let element of elements) {
     if (element.type === "played") {
-      // check if played in the last 4 hours
+      // check if played in the last 6 hours
       if (
         element.playStartTime &&
-        element.playStartTime.getTime() + 1000 * 60 * 60 * 4 > now.getTime()
+        element.playStartTime.getTime() + 1000 * 60 * 60 * 6 > now.getTime()
       ) {
+        // fireflies can be played all 2 hours
+        if (
+          song.name === "Fireflies" &&
+          element.playStartTime.getTime() + 1000 * 60 * 60 * 2 > now.getTime()
+        ) {
+          return false;
+        }
         return true;
       }
     } else if (element.type === "removed") {
