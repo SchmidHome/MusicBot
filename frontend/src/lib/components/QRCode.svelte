@@ -15,7 +15,7 @@
   let wrapper: HTMLButtonElement;
   $: src =
     link || qr || import.meta.env.PUBLIC_DEFAULT_QR_LINK || browser
-      ? window.location.href
+      ? window.location.href + "dj"
       : "";
 
   $: if (wrapper)

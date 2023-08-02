@@ -1,6 +1,8 @@
 <script>
   import Back from "$assets/back.svelte";
-  import { getUser } from "$data/getUser";
+
+  /** @type {import('./$types').PageData} */
+  export let data;
 </script>
 
 <div class="wrapper">
@@ -10,15 +12,11 @@
     </button>
 
     <div class="nametag">
-      {#await getUser()}
-        <p />
-      {:then user}
-        <p>
-          {user.name.slice(0, 15)}{user.name.length > 15 ? "..." : ""} ({user.state})
-        </p>
-      {:catch error}
-        <p>{error.message}</p>
-      {/await}
+      <p>
+        {(data.name || data.ip).slice(0, 15)}{(data.name || data.ip).length > 15
+          ? "..."
+          : ""} ({data.state})
+      </p>
     </div>
   </div>
 
