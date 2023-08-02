@@ -6,7 +6,7 @@
   export let hideTime = false;
 
   $: waitingTimeString =
-    "playStartTime" in song && song.playStartTime !== undefined
+    song && "playStartTime" in song && song.playStartTime !== undefined
       ? new Date(song.playStartTime ?? Date.now()).toLocaleTimeString("de-DE")
       : "Jetzt";
 </script>
@@ -19,7 +19,7 @@
         <div class="song-info__left--inner">
           <h2 class="title">{song.name}</h2>
           <span class="artist">{song.artist}</span>
-          {#if "addedBy" in song}
+          {#if song && "addedBy" in song}
             <h4 class="added-by">Hinzugefügt von {song.addedBy}</h4>
           {/if}
         </div>

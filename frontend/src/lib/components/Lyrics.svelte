@@ -28,7 +28,7 @@
 
   $: if (currentLineEle && !$lyrics.error && wrapper) {
     wrapper.scrollTop = currentLineEle.offsetTop - wrapper.offsetHeight / 2;
-  } else if (currentIndex === -1) {
+  } else if (currentIndex === -1 && wrapper) {
     wrapper.scrollTop = 0;
   }
   // currentLineEle.scrollIntoView({
