@@ -19,7 +19,7 @@ export async function getPlaylist(uri: PlaylistUri) {
     } else {
       let timeout = setTimeout(() => {
         throw new Error("timeout");
-      });
+      }, 1000 * 10);
       loggerSpotify.log(`loading playlist ${uri}`);
       const songs: Song[] = [];
       let offset = 0;
@@ -46,7 +46,7 @@ export async function getPlaylist(uri: PlaylistUri) {
         { $set: newPlaylist },
         { upsert: true }
       );
-      clearTimeout(timeout);
+      // clearTimeout(timeout);
       return newPlaylist;
     }
   });
