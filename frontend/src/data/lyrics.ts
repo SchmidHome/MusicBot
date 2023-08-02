@@ -23,7 +23,7 @@ export async function refreshLyrics(): Promise<Lyrics> {
     return errorLyrics;
   }
 
-  if (!newLyrics.lyrics || newLyrics.lyrics.error === false)
+  if (newLyrics.lyrics && newLyrics.lyrics.error === false)
     // convert string from api to number
     for (const lyric of newLyrics.lyrics.lines)
       lyric.startTimeMs = Number(lyric.startTimeMs);
