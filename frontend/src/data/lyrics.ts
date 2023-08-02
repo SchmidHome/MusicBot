@@ -29,8 +29,12 @@ export async function refreshLyrics(): Promise<Lyrics> {
       lyric.startTimeMs = Number(lyric.startTimeMs);
   else {
     // fill out fields to prevent errors
-    newLyrics.lyrics.syncType = "NO_LYRICS";
-    newLyrics.lyrics.lines = [];
+    newLyrics.lyrics = {
+      error: true,
+      syncType: "NO_SONG",
+      lines: [],
+      ...(newLyrics.lyrics as Lyrics | undefined),
+    };
   }
 
   lyrics.set(newLyrics.lyrics);
