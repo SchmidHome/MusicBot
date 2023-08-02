@@ -17,8 +17,6 @@ import { getSong } from "./spotify/songCache";
 
 const logger = new ConsoleLogger("index", chalk.white);
 
-startHA();
-
 let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
@@ -158,6 +156,14 @@ async function checkPlaying(initial = false) {
 // check arguments
 const startArg = process.argv[2];
 
+function start() {
+  startHA();
+  startAPI();
+
+  setTimeout(() => checkPlaying(true), 2 * 1000);
+  setInterval(checkPlaying, 20 * 1000);
+}
+
 if (startArg) {
   switch (startArg) {
     case "check-db":
@@ -168,18 +174,12 @@ if (startArg) {
       }, 1000);
       break;
     case "--color":
-      startAPI();
-
-      setTimeout(() => checkPlaying(true), 2 * 1000);
-      setInterval(checkPlaying, 20 * 1000);
+      start();
       break;
     default:
       logger.error("Unknown argument: " + startArg);
       process.exit(1);
   }
 } else {
-  startAPI();
-
-  setTimeout(() => checkPlaying(true), 2 * 1000);
-  setInterval(checkPlaying, 20 * 1000);
+  start();
 }

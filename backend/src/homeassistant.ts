@@ -8,7 +8,7 @@ import {
 import { ConsoleLogger } from "./lib/logger";
 import { getPlaying } from "./queue/getter";
 import { getSong } from "./spotify/songCache";
-import { sameColor } from "./spotify/color";
+import { sameColor } from "./color/color";
 import usedPlayer from "./player/usedPlayer";
 import {
   HSLtoRGB,
@@ -16,8 +16,9 @@ import {
   rangeColor,
   roundColor,
   scaleColor,
-} from "./color";
+} from "./color/conversion";
 import chalk from "chalk";
+import { getColorFromSong } from "./color/colorCache";
 export const logger = new ConsoleLogger("hass", chalk.blueBright);
 
 let ha: HassApi | undefined;
@@ -64,8 +65,12 @@ export async function updateColor() {
     if (!now) return (running = false);
     let song = await getSong(now.songUri);
 
-    let color: [number, number, number] = song.color;
-
+    let color = await getColorFromSong(song.imageUri);
+    if (!color) {
+      logger.warn(`no color found for ${song.imageUri}`);
+      running = false;
+      return;
+    }
     // make colors more vib
     let hsl = RGBtoHSL(color);
     let hsl2 = { ...hsl };
@@ -95,7 +100,7 @@ export async function updateColor() {
           setTimeout(resolve, Math.random() * 1000)
         );
         let _color = colorSaturated;
-        if (entity.id === "light.06_esswo_rgb") _color = color;
+        if (entity.id === "light.06_esswo_rgb") _color = color!;
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
           rgbw_color: [_color[0], _color[1], _color[2], 0],
@@ -115,14 +120,11 @@ const entityArr = [
     id: "light.01_garderobe_rand_rgb",
   },
   // {
-  //   id: "light.06_kuewo_rgb",
+  //   id: "light.06_esswo_rgb",
   // },
-  {
-    id: "light.06_esswo_rgb",
-  },
-  {
-    id: "light.06_kuess_rgb",
-  },
+  // {
+  //   id: "light.06_kuess_rgb",
+  // },
   // {
   //   id: "light.07_andi_rgb",
   // },
@@ -132,9 +134,9 @@ const entityArr = [
   {
     id: "light.13_johannes_licht",
   },
-  {
-    id: "light.11_gabriele_rgb",
-  },
+  // {
+  //   id: "light.11_gabriele_rgb",
+  // },
   {
     id: "light.15_hwr_rgb",
   },

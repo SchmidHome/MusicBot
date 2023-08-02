@@ -1,5 +1,4 @@
 import { Cached, db, validateCollection } from "../mongodb";
-import { getColorFromSong } from "./color";
 import { awaitRequest, canRequest } from "./rateLimiter";
 import { Song, SongSchema, SongUri } from "./song";
 import { loggerSpotify, spotify } from "./spotify";
@@ -26,8 +25,6 @@ export async function getSong(uri: SongUri): Promise<Song> {
 export async function trackToSong(
   track: SpotifyApi.TrackObjectFull
 ): Promise<Song> {
-  const color = await getColorFromSong(track.album.images[0].url);
-  if (!color) loggerSpotify.warn(`no color found for ${track.name}`);
   const song = {
     name: track.name,
     artist: track.artists.map((a) => a.name).join(", "),
@@ -35,7 +32,6 @@ export async function trackToSong(
     imageUri: track.album.images[0].url,
     songUri: track.uri,
     duration_ms: track.duration_ms,
-    color: color || [255, 255, 255],
   };
 
   await songCache.updateOne(

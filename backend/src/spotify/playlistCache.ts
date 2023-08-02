@@ -46,7 +46,7 @@ export async function getPlaylist(uri: PlaylistUri) {
         { $set: newPlaylist },
         { upsert: true }
       );
-      // clearTimeout(timeout);
+      clearTimeout(timeout);
       return newPlaylist;
     }
   });
