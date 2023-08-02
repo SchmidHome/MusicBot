@@ -71,7 +71,7 @@ queueRouter.delete("/queue", async (req, res) => {
   const { _id } = parsed.data;
   const element = await getId(_id);
   if (!element) return res.status(404).send("ID not found.");
-  if (!(element.type in ["queued", "new"]))
+  if (!["queued", "new"].includes(element.type))
     return res.status(400).send("Can't delete this element.");
 
   await setType(element._id, "removed");
