@@ -28,6 +28,8 @@
 
   $: if (currentLineEle && !$lyrics.error && wrapper) {
     wrapper.scrollTop = currentLineEle.offsetTop - wrapper.offsetHeight / 2;
+  } else if (currentIndex === -1) {
+    wrapper.scrollTop = 0;
   }
   // currentLineEle.scrollIntoView({
   //   behavior: "smooth",
