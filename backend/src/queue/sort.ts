@@ -4,7 +4,6 @@ import { getNext, getPlaying, getQueued, getFullQueue } from "./getter";
 import { setPlayStartTime, setPosition } from "./setter";
 import { QueueElement } from "./types";
 import { Mutex } from "async-mutex";
-import { ConsoleLogger } from "../lib/logger";
 import { queueLogger } from "./queue";
 
 async function _sortQueue(elements?: WithId<QueueElement>[]) {
