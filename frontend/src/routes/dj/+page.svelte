@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import Search from "$assets/search.svelte";
   import MainSong from "$lib/components/MainSong.svelte";
+  import Queue from "$assets/queue.svelte";
 </script>
 
 <div style:width="100%">
@@ -8,9 +10,11 @@
 </div>
 <div class="buttons">
   <button class="search-btn" on:click={() => goto("dj/search")}>
-    search
+    <Search height="1.5em" width="1.5em" />
   </button>
-  <button class="queue-btn" on:click={() => goto("dj/queue")}> queue </button>
+  <button class="queue-btn" on:click={() => goto("dj/queue")}>
+    <Queue height="1.5em" width="1.5em" />
+  </button>
 </div>
 
 <style lang="sass">
@@ -19,7 +23,7 @@
     flex-direction: row
     justify-content: space-between
     align-items: center
-    margin-top: $spacing
+    margin-top: $spacing * 2
     width: 100%
 
   .search-btn, .queue-btn

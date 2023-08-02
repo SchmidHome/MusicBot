@@ -49,6 +49,7 @@
 <style lang="sass">
   .wrapper
     height: 100vh
+    width: 100%
     box-sizing: border-box
     padding: $spacing
     display: flex
@@ -81,4 +82,7 @@
     display: flex
     height: 100%
     align-items: center
+    .add-btn
+      font-size: 2em
+      font-weight: bold
 </style>

@@ -19,3 +19,12 @@
   </div>
 {/each}
 <div style:flex-grow="1" />
+
+<style lang="sass">
+  .wrapper
+    width: 100%
+    
+  .delete-btn
+    font-size: 2em
+    font-weight: bold
+</style>

@@ -36,10 +36,11 @@
     display: flex
     flex-direction: row
     justify-content: space-between
-    align-items: center
     width: 100%
 
   .back-btn
+    outline: none
+    border: none
     background: $bg-light
     border-bottom-right-radius: $border-radius
     padding: $spacing
