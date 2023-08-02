@@ -68,7 +68,7 @@ async function checkPlaying(initial = false) {
     }
     await setType(queuePlayingSong._id, "now");
     if (initial || oldQueuePlayingSong?._id !== queuePlayingSong._id) {
-      await updateColor();
+      await updateColor().finally(() => (running = false));
     }
 
     // check next
@@ -100,7 +100,7 @@ async function checkPlaying(initial = false) {
       await setType(queueNextSong._id, "next");
     } else {
       // add more songs to queue
-      const queue = await getFullQueue();
+      const queue = (await getFullQueue()).filter((e) => e.type != "now");
       logger.debug(`queue length: ${queue.length}`);
       if (queue.length < QUEUE_LEN) {
         const newSong = await getSongFromBackgroundPlaylist();
@@ -130,7 +130,9 @@ async function checkPlaying(initial = false) {
     // add special update on change
     if (updateOnChange) clearTimeout(updateOnChange);
     updateOnChange = setTimeout(() => {
-      checkPlaying();
+      checkPlaying().finally(() => {
+        running = false;
+      });
     }, Math.max(timeLeft - 6500, 2000));
   } else {
     // initial start
@@ -150,7 +152,7 @@ async function checkPlaying(initial = false) {
       }
       await setType(queuePlayingSong._id, "now");
     }
-    await updateColor();
+    await updateColor().finally(() => (running = false));
     await usedPlayer.setNext(queuePlayingSong.songUri);
   }
   running = false;
@@ -163,8 +165,20 @@ function start() {
   startHA();
   startAPI();
 
-  setTimeout(() => checkPlaying(true), 2 * 1000);
-  setInterval(checkPlaying, 20 * 1000);
+  setTimeout(
+    () =>
+      checkPlaying(true).finally(() => {
+        running = false;
+      }),
+    2 * 1000
+  );
+  setInterval(
+    () =>
+      checkPlaying().finally(() => {
+        running = false;
+      }),
+    20 * 1000
+  );
 }
 
 if (startArg) {

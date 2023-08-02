@@ -82,6 +82,17 @@ const getPlayingMutex = new mutexRequest(logger, "getPlaying", async () => {
       }
     }
 
+    if (info.track == 0 && info.secondsInTrack == 0) {
+      // check if music is paused
+      const playing = await getPlayingState();
+      if (!playing) {
+        logger.error("MUSIC PAUSE DETECTED, REMOVING NEXT SONG");
+        // remove next song
+        await removeFromQueue(d, 1);
+        next = undefined;
+      }
+    }
+
     return { now, next };
   } catch (error) {
     return undefined;

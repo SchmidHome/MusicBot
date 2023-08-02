@@ -75,7 +75,7 @@ export async function updateColor() {
     let hsl = RGBtoHSL(color);
     let hsl2 = { ...hsl };
     // maximize saturation
-    hsl2.sat = Math.min(hsl.sat + 20, 100);
+    hsl2.sat = Math.min(hsl.sat + 15, 100);
     hsl2.lum = 50;
     let colorSaturated = roundColor(scaleColor(rangeColor(HSLtoRGB(hsl2))));
     if (isPaused) {
@@ -99,11 +99,10 @@ export async function updateColor() {
         await new Promise((resolve) =>
           setTimeout(resolve, Math.random() * 1000)
         );
-        let _color = colorSaturated;
-        if (entity.id === "light.06_esswo_rgb") _color = color!;
+        const c = colorSaturated;
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
-          rgbw_color: [_color[0], _color[1], _color[2], 0],
+          rgbw_color: [c[0], c[1], c[2], 0],
           transition: 5,
         });
       })
@@ -113,18 +112,18 @@ export async function updateColor() {
   running = false;
 }
 
-setInterval(updateColor, 1000 * 20);
+setInterval(() => updateColor().finally(() => (running = false)), 1000 * 20);
 
 const entityArr = [
   {
     id: "light.01_garderobe_rand_rgb",
   },
-  // {
-  //   id: "light.06_esswo_rgb",
-  // },
-  // {
-  //   id: "light.06_kuess_rgb",
-  // },
+  {
+    id: "light.06_esswo_rgb",
+  },
+  {
+    id: "light.06_kuess_rgb",
+  },
   // {
   //   id: "light.07_andi_rgb",
   // },
