@@ -23,5 +23,7 @@
     "vite": "^4.4.2"
   },
   "type": "module",
-  "dependencies": {}
+  "dependencies": {
+    "qr-creator": "^1.0.0"
+  }
 }
