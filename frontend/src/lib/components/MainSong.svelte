@@ -3,6 +3,8 @@
   import { getTimeStringFromMS } from "$data/functions";
   import currentSong from "$data/currentSong";
 
+  export let ignoreOrientation = false;
+
   $: durationString = $currentSong
     ? getTimeStringFromMS($currentSong.duration_ms)
     : "";
@@ -15,7 +17,7 @@
     (($currentSong?.songPos ?? 0) / ($currentSong?.duration_ms ?? 1)) * 100;
 </script>
 
-<div class="wrapper">
+<div class="wrapper" class:ignoreOrientation>
   <div
     class="cover"
     style:background-image={"url(" + $currentSong?.imageUri + ")"} />
@@ -51,8 +53,6 @@
     box-sizing: border-box
     box-shadow: $shadow
     flex-direction: column
-    @media screen and (orientation: portrait)
-      flex-direction: row
   
   .lower-wrapper
     display: flex
@@ -68,18 +68,12 @@
     background-size: cover
     box-shadow: $shadow
     width: 100%
-    @media screen and (orientation: portrait)
-      width: 45%
-      height: 45%
-      margin: auto $spacing auto 0
 
   .title-wrapper
     margin: 0
     width: 100%
     position: relative
     height: 3rem
-    @media screen and (orientation: portrait)
-      height: 2rem
 
   .title
     overflow: hidden
@@ -88,8 +82,6 @@
     position: absolute
     inset: 0
     width: 100%
-    @media screen and (orientation: portrait)
-      font-size: 1.5em
   
   .subtitle
     display: flex
@@ -108,4 +100,22 @@
   
   .artist:not(:last-child)
     margin-right: $spacing
+
+  .wrapper:not(.ignoreOrientation)
+    @media screen and (orientation: portrait)
+      flex-direction: row
+    .cover
+      @media screen and (orientation: portrait)
+        width: 45%
+        height: 45%
+        margin: auto $spacing auto 0
+    .title-wrapper
+      @media screen and (orientation: portrait)
+          height: 2rem
+    .title
+      @media screen and (orientation: portrait)
+        font-size: 1.5em
+    .subtitle
+      @media screen and (orientation: portrait)
+      flex-direction: column
 </style>

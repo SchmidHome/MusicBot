@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { SongElement as SongType } from "../../types.d";
+  import type { QueueElement, SongElement as SongType } from "../../types.d";
 
-  export let song: SongType;
+  export let song: SongType | QueueElement;
 
   export let hideTime = false;
 
   $: waitingTimeString =
-    song.startDate !== undefined
-      ? new Date(song.startDate ?? Date.now()).toLocaleTimeString("de-DE")
+    "playStartTime" in song && song.playStartTime !== undefined
+      ? new Date(song.playStartTime ?? Date.now()).toLocaleTimeString("de-DE")
       : "Jetzt";
 </script>
 
@@ -19,13 +19,14 @@
         <div class="song-info__left--inner">
           <h2 class="title">{song.name}</h2>
           <span class="artist">{song.artist}</span>
-          {#if song.dj}
-            <h4 class="added-by">Hinzugefügt von {song.dj}</h4>
+          {#if "addedBy" in song}
+            <h4 class="added-by">Hinzugefügt von {song.addedBy}</h4>
           {/if}
         </div>
       </div>
 
       <div class="song-info__right">
+        <slot />
         <div class="play-info">
           {#if !hideTime}
             <span>{waitingTimeString}</span>
@@ -49,7 +50,7 @@
     box-sizing: border-box
     box-shadow: $shadow
     max-height: 30vh
-    height: calc(100% - $spacing)
+    height: var(--height, calc(100% - $spacing))
   
   .text-wrapper
     display: flex

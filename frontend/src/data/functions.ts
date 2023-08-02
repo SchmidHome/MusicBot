@@ -23,11 +23,11 @@ export async function customFetch<T>(
     body,
     headers,
     ...rest
-  }: {
+  }: Omit<RequestInit, "body"> & {
     method?: RequestInit["method"];
-    body?: RequestInit["body"];
+    body?: any;
     headers?: RequestInit["headers"];
-  } & RequestInit = { method: "GET" }
+  } = { method: "GET" }
 ): Promise<T> {
   try {
     const baseURL = import.meta.env.PUBLIC_SERVER_URL;

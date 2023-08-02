@@ -10,8 +10,8 @@
     "sourceMap": true,
     "strict": true,
     "paths": {
-      "/": ["./src"],
-      "/*": ["./src/*"],
+      // "/": ["./src"],
+      // "/*": ["./src/*"],
       "$data": ["./src/data"],
       "$data/*": ["./src/data/*"],
       "$assets": ["./src/assets"],

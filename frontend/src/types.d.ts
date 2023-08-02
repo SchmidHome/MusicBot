@@ -52,3 +52,9 @@ export interface NoLyrics {
 }
 
 export type Lyrics = NoLyrics | SyncedLyrics | UnsyncedLyrics;
+
+export type User = {
+  ip: string;
+  name: string;
+  state: "dj" | "admin";
+};
