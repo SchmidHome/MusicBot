@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getPlaying } from "../queue/getter";
 import { getSong } from "../spotify/songCache";
-import { getLyrics } from "../spotify/lyrics";
+import { getLyrics } from "../spotify/lyricsCache";
 import usedPlayer from "../player/usedPlayer";
 
 export const lyricsRouter = Router();
