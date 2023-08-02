@@ -7,6 +7,9 @@ export const queue = writable<QueueElement[]>([]);
 export async function refreshQueue(): Promise<QueueElement[]> {
   const songs = await customFetch<QueueElement[]>("/queue");
   if (songs) {
+    songs.forEach((song) => {
+      if (song.playStartTime) song.playStartTime = new Date(song.playStartTime);
+    });
     if (browser) window.queue = songs;
     queue.set(songs);
   }
