@@ -43,7 +43,7 @@ function removeFromQueue(d: SonosDevice, index: number) {
 const getPlayingStateMutex = new mutexRequest(
   logger,
   "getPlayingState",
-  1000 * 5,
+  1000 * 10,
   async () => {
     const d = await device();
     const state = (await getState(d)) === "PLAYING";
@@ -56,7 +56,7 @@ export const getPlayingState =
 const getPlayingMutex = new mutexRequest(
   logger,
   "getPlaying",
-  1000 * 10,
+  1000 * 20,
   async () => {
     const d = await device();
     try {
@@ -90,7 +90,7 @@ const getPlayingMutex = new mutexRequest(
 
       if (info.track == 0 && info.secondsInTrack == 0) {
         // check if music is paused
-        const playing = await getPlayingState();
+        const playing = await getPlayingState(true);
         if (!playing) {
           logger.error("MUSIC PAUSE DETECTED, REMOVING NEXT SONG");
           // remove next song
@@ -151,7 +151,7 @@ export async function applyNextSpotifyUri(uri: string): Promise<void> {
 
   if (info && info.track == 0 && info.secondsInTrack == 0) {
     // check if music is paused
-    const playing = await getPlayingState();
+    const playing = await getPlayingState(true);
     if (!playing) {
       logger.error("MUSIC PAUSE DETECTED, STARTING NEXT SONG");
       // start next song

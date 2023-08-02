@@ -6,15 +6,15 @@ import { Player, PlayingState } from "./player";
 
 export class SonosPlayer extends Player {
   getVolume(): Promise<number> {
-    return getVolume();
+    return getVolume(false);
   }
 
   setVolume(volume: number): Promise<void> {
     return setVolume(volume).then(() => {});
   }
 
-  async getPlaying(): Promise<PlayingState> {
-    const playing = await getPlaying();
+  async getPlaying(priority = false): Promise<PlayingState> {
+    const playing = await getPlaying(priority);
     logger.log(
       `now: ${playing?.now?.spotifyUri}, next: ${playing?.next?.spotifyUri}`
     );
@@ -26,8 +26,8 @@ export class SonosPlayer extends Player {
     };
   }
 
-  async getPaused(): Promise<boolean> {
-    const state = await getPlayingState();
+  async getPaused(priority = false): Promise<boolean> {
+    const state = await getPlayingState(priority);
     return !state;
   }
 

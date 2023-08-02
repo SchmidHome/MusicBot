@@ -30,7 +30,7 @@ let running = false;
 async function checkPlaying(initial = false) {
   if (running) return logger.warn("checkPlaying already running");
   running = true;
-  const { now, next } = await usedPlayer.getPlaying();
+  const { now, next } = await usedPlayer.getPlaying(true);
 
   await sortQueue();
 
@@ -80,7 +80,7 @@ async function checkPlaying(initial = false) {
 
     logger.debug(`time left:  ${timeLeft / 1000}s`);
 
-    const paused = await usedPlayer.getPaused();
+    const paused = await usedPlayer.getPaused(true);
     if (!queueNextSong && (timeLeft < 90 * 1000 || paused)) {
       // set new next
       const queue = await getQueued();

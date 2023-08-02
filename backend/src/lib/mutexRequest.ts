@@ -12,8 +12,11 @@ export class mutexRequest<F extends (...args: any) => Promise<any>> {
   private resolver: Promise<ReturnType<F>> | undefined;
 
   lastRes: { time: number; res: ReturnType<F> } | undefined;
-  //@ts-expect-error
-  public async execute(...args: Parameters<F>): ReturnType<F> {
+  public async execute(
+    priority: boolean,
+    ...args: Parameters<F>
+  ): // @ts-expect-error
+  ReturnType<F> {
     if (this.resolver) {
       this.logger.debug(`${this.name}() ${chalk.yellow("waiting")}`);
       return this.resolver;
@@ -21,7 +24,8 @@ export class mutexRequest<F extends (...args: any) => Promise<any>> {
 
     if (
       this.lastRes &&
-      Date.now() - this.lastRes.time < this.requestInterval_ms
+      Date.now() - this.lastRes.time <
+        this.requestInterval_ms / (priority ? 4 : 1)
     ) {
       this.logger.debug(`${this.name}() ${chalk.gray("cached")}`);
       return this.lastRes.res;
