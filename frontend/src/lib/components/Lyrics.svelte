@@ -10,14 +10,14 @@
     let currentLyrics = $lyrics as SyncedLyrics | UnsyncedLyrics;
     if (currentLyrics.syncType === "LINE_SYNCED") {
       let index = currentLyrics.lines.findIndex(
-        (line) => line.startTimeMs >= ($currentSong?.positionInTrack ?? 0)
+        (line) => line.startTimeMs >= ($currentSong?.songPos ?? 0)
       );
       if (index === 0) return -1;
       if (index === -1) return currentLyrics.lines.length;
       return index - 1;
     } else if (currentLyrics.syncType === "UNSYNCED") {
       const songPercentage = $currentSong
-        ? $currentSong.positionInTrack / $currentSong.songDurationMs
+        ? $currentSong.songPos / $currentSong.duration_ms
         : 0;
       const lyricsPercentage = currentLyrics.lines.length * songPercentage;
       return Math.floor(lyricsPercentage);

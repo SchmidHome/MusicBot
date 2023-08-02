@@ -6,6 +6,7 @@
   import usePortrait from "$data/portrait";
   import queue from "$data/queue";
   import { urlParams } from "$data/urlParams";
+  import { goto } from "$app/navigation";
 
   const lyrics = urlParams.get("lyrics");
   const portrait = usePortrait();
@@ -16,8 +17,7 @@
     <button
       class="back-btn btn"
       on:click={() => {
-        window.location.href =
-          window.location.origin + window.location.pathname;
+        goto("/");
       }}>
       <Back height=".9em" width=".9em" />
       Zurück
