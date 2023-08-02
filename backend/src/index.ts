@@ -13,7 +13,9 @@ import {
 import { addSong, setPlayStartTime, setType } from "./queue/setter";
 import { sortQueue, updateTime } from "./queue/sort";
 import { getSongFromBackgroundPlaylist } from "./spotify/backgroundPlaylist";
-import { getSong } from "./spotify/songCache";
+import { clearSongCache, getSong } from "./spotify/songCache";
+import { clearColorCache } from "./color/colorCache";
+import { clearPlaylistCache } from "./spotify/playlistCache";
 
 const logger = new ConsoleLogger("index", chalk.white);
 
@@ -172,6 +174,16 @@ if (startArg) {
         logger.log("Done");
         process.exit(0);
       }, 1000);
+      break;
+    case "clear-cache":
+      setTimeout(async () => {
+        logger.log("Clearing cache...");
+        await clearColorCache();
+        await clearSongCache();
+        await clearPlaylistCache();
+        logger.log("Done");
+        process.exit(0);
+      }, 400);
       break;
     case "--color":
       start();

@@ -8,6 +8,9 @@ import { Mutex } from "async-mutex";
 const playlistCache = db.collection<Cached<Playlist>>("playlistCache");
 const playlistCacheMutex = new Mutex();
 validateCollection(playlistCache, PlaylistSchema);
+export function clearPlaylistCache() {
+  return playlistCache.deleteMany({});
+}
 
 export async function getPlaylist(uri: PlaylistUri) {
   return playlistCacheMutex.runExclusive(async () => {

@@ -9,6 +9,7 @@
     "start": "node out/index.js",
     "serve": "tsc && node out/index.js",
     "dev": "nodemon src/index.ts",
+    "clear-cache": "ts-node src/index.ts clear-cache",
     "check-db": "ts-node src/index.ts check-db",
     "pm2-start": "pm2 start out/index.js --name musicbot -- --color",
     "pm2-watch": "pm2 start out/index.js --name musicbot -- --color --watch out/*",

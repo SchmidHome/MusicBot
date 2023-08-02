@@ -17,6 +17,9 @@ const colorCache =
   );
 const colorCacheMutex = new Mutex();
 validateCollection(colorCache, colorSchema);
+export function clearColorCache() {
+  return colorCache.deleteMany({});
+}
 
 export async function getColorFromSong(
   imageUri: string
