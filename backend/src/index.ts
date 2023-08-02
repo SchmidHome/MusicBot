@@ -24,7 +24,7 @@ let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
 
-const QUEUE_LEN = 1;
+const QUEUE_LEN = 4;
 
 let running = false;
 async function checkPlaying(initial = false) {
@@ -100,16 +100,17 @@ async function checkPlaying(initial = false) {
       await setType(queueNextSong._id, "next");
     } else {
       // add more songs to queue
-      const queue = (await getFullQueue()).filter((e) => e.type != "now");
+      let queue = (await getFullQueue()).filter((e) => e.type != "now");
       logger.debug(`queue length: ${queue.length}`);
-      if (queue.length < QUEUE_LEN) {
+      while (queue.length < QUEUE_LEN) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {
           running = false;
           return;
         }
         await addSong(newSong.songUri);
-        logger.log("add song from default playlist");
+        logger.log("added song from default playlist");
+        queue = (await getFullQueue()).filter((e) => e.type != "now");
       }
     }
 
