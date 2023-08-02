@@ -16,6 +16,7 @@ import { getSongFromBackgroundPlaylist } from "./spotify/backgroundPlaylist";
 import { clearSongCache, getSong } from "./spotify/songCache";
 import { clearColorCache } from "./color/colorCache";
 import { clearPlaylistCache } from "./spotify/playlistCache";
+import { clearLyricsCache } from "./spotify/lyricsCache";
 
 const logger = new ConsoleLogger("index", chalk.white);
 
@@ -181,6 +182,7 @@ if (startArg) {
         await clearColorCache();
         await clearSongCache();
         await clearPlaylistCache();
+        await clearLyricsCache();
         logger.log("Done");
         process.exit(0);
       }, 400);
