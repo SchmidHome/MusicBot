@@ -13,7 +13,7 @@
 
     <div class="nametag">
       <p>
-        {(data.name || data.ip).slice(0, 15)}{(data.name || data.ip).length > 15
+        {(data.name || data.ip).slice(0, 25)}{(data.name || data.ip).length > 25
           ? "..."
           : ""} ({data.state})
       </p>
