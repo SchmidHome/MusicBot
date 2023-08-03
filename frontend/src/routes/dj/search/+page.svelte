@@ -25,19 +25,21 @@
     {#await getSongs($debouncedSearch)}
       <p>loading...</p>
     {:then songs}
-      <div class="song-wrapper">
+      <div class="songs-wrapper">
         {#each songs as song}
-          <Song {song} hideTime --height="25vh">
-            <div class="add-btn-wrapper">
-              <button
-                class="add-btn"
-                on:click={() => {
-                  addToQueue(song);
-                }}>
-                +
-              </button>
-            </div>
-          </Song>
+          <div class="song-wrapper">
+            <Song {song} hideTime>
+              <div class="add-btn-wrapper">
+                <button
+                  class="add-btn"
+                  on:click={() => {
+                    addToQueue(song);
+                  }}>
+                  +
+                </button>
+              </div>
+            </Song>
+          </div>
         {/each}
       </div>
     {:catch error}
@@ -71,12 +73,16 @@
       box-shadow: $shadow
       border-color: $bg-dark
 
-  .song-wrapper
+  .songs-wrapper
     display: flex
     flex-direction: column
     flex-grow: 1
     width: 100%
     overflow-y: auto
+    font-size: .9em
+
+  .song-wrapper
+    height: 15vh
 
   .add-btn-wrapper
     display: flex

@@ -35,7 +35,7 @@
     <Lyrics />
   </div>
 
-  {#if !$portrait && $queue.length && $queue[0].playStartTime ? $queue[0].playStartTime.getTime() < Date.now() + 1000 * 30 : $currentSong && $currentSong.duration_ms - $currentSong.songPos < 1000 * 30}
+  {#if !$portrait && ($queue.length && $queue[0].playStartTime ? $queue[0].playStartTime.getTime() < Date.now() + 1000 * 30 : $currentSong && $currentSong.duration_ms - $currentSong.songPos < 1000 * 30)}
     <!-- only show if playing in the next 25 seconds -->
     <div class="nextSong">
       <span class="nextSong_label">Nächster Song</span>
@@ -111,9 +111,11 @@
     width: 100%
     display: block
     margin-bottom: calc($spacing / -2)
+    font-size: $font-big
 
   .nextSong_song
     height: 7vw
+    font-size: .9em
 
   .lyrics
     font-size: 1.2em

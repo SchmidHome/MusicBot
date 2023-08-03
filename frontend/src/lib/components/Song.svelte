@@ -13,13 +13,13 @@
 
 <div class="wrapper">
   <div class="text-wrapper">
-    <div class="cover" style:background-image={"url(" + song.imageUri + ")"} />
+    <div class="cover" style:background-image={"url(" + song?.imageUri + ")"} />
     <div class="info-outer">
       <div class="song-info__left">
         <div class="song-info__left--inner">
-          <h2 class="title">{song.name}</h2>
-          <span class="artist">{song.artist}</span>
-          {#if song && "addedBy" in song}
+          <h2 class="title">{song?.name}</h2>
+          <span class="artist">{song?.artist}</span>
+          {#if song && "addedBy" in song && song.addedBy}
             <h4 class="added-by">Hinzugefügt von {song.addedBy}</h4>
           {/if}
         </div>
