@@ -3,6 +3,7 @@
   import Search from "$assets/search.svelte";
   import MainSong from "$lib/components/MainSong.svelte";
   import Queue from "$assets/queue.svelte";
+  import Microphone from "$assets/microphone.svelte";
 </script>
 
 <div style:width="100%">
@@ -11,6 +12,9 @@
 <div class="buttons">
   <button class="search-btn" on:click={() => goto("dj/search")}>
     <Search height="1.5em" width="1.5em" />
+  </button>
+  <button class="lyrics-btn" on:click={() => goto("dj/lyrics")}>
+    <Microphone height="1.5em" width="1.5em" />
   </button>
   <button class="queue-btn" on:click={() => goto("dj/queue")}>
     <Queue height="1.5em" width="1.5em" />
@@ -26,7 +30,7 @@
     margin-top: $spacing * 2
     width: 100%
 
-  .search-btn, .queue-btn
+  .search-btn, .queue-btn, .lyrics-btn
     border-radius: $border-radius
     border: none
     background-color: $bg-light
