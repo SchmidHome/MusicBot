@@ -16,13 +16,13 @@ const app = Express();
 app.use(cors({ origin: "*" }));
 app.use(Express.json());
 
-app.use(
-  morgan("dev", {
-    stream: {
-      write: (message) => loggerAPI.log(message.trim()),
-    },
-  })
-);
+// app.use(
+//   morgan("dev", {
+//     stream: {
+//       write: (message) => loggerAPI.log(message.trim()),
+//     },
+//   })
+// );
 
 app.get("/", async (_, res) => res.send("MusicBot V2"));
 app.get("/user", async (req, res) => {

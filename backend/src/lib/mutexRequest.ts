@@ -27,7 +27,7 @@ export class mutexRequest<F extends (...args: any) => Promise<any>> {
       Date.now() - this.lastRes.time <
         this.requestInterval_ms / (priority ? 4 : 1)
     ) {
-      this.logger.debug(`${this.name}() ${chalk.gray("cached")}`);
+      // this.logger.debug(`${this.name}() ${chalk.gray("cached")}`);
       return this.lastRes.res;
     }
 

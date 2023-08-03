@@ -25,6 +25,7 @@ const getVolumeMutex = new mutexRequest(
 export const getVolume = getVolumeMutex.execute.bind(getVolumeMutex);
 
 export async function setVolume(volume: number): Promise<boolean> {
+  return false; //! DEACTIVATED
   let start = Date.now();
   // targetVolume = volume
   let res = await applyVolume(volume);
