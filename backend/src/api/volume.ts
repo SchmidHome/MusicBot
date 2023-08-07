@@ -16,7 +16,7 @@ export const volumePostRequestSchema = z.object({
 export type VolumePostRequest = z.infer<typeof volumePostRequestSchema>;
 
 volumeRouter.get("/volume", async (req, res) =>
-  res.send(String(await usedPlayer.getVolume()))
+  res.status(200).send(String(await usedPlayer.getVolume()))
 );
 volumeRouter.post("/volume", async (req, res) => {
   try {
@@ -30,7 +30,7 @@ volumeRouter.post("/volume", async (req, res) => {
       else vol -= 5;
       await usedPlayer.setVolume(vol);
     }
-    res.send(String(await usedPlayer.getVolume()));
+    res.status(200).send(String(await usedPlayer.getVolume()));
   } catch (error) {
     return res.status(400).json(error);
   }

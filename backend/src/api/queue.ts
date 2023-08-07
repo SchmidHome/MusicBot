@@ -15,6 +15,8 @@ queueRouter.get("/playing", async (req, res) => {
   const playing = await getPlaying();
   const paused = await usedPlayer.getPaused();
   if (!playing) return res.json(undefined);
+  // if playing.addedBy is null, remove it
+  if (!playing.addedBy) delete playing.addedBy;
 
   const song = await getSong(playing.songUri);
   res.status(200).json({ ...playing, ...song, paused });
@@ -27,6 +29,10 @@ queueRouter.get("/queue", async (req, res) => {
       .filter((song) => song.type != "now")
       .map(async (song) => ({ ...song, ...(await getSong(song.songUri)) }))
   );
+  // if song.addedBy is null, remove it
+  songQueue.forEach((song) => {
+    if (!song.addedBy) delete song.addedBy;
+  });
   res.status(200).json(songQueue);
 });
 
