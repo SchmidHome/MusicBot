@@ -17,6 +17,8 @@ import { clearSongCache, getSong } from "./spotify/songCache";
 import { clearColorCache } from "./color/colorCache";
 import { clearPlaylistCache } from "./spotify/playlistCache";
 import { clearLyricsCache } from "./spotify/lyricsCache";
+import { queueCollection } from "./queue/queue";
+import fs from "fs/promises";
 
 const logger = new ConsoleLogger("index", chalk.white);
 
@@ -202,6 +204,45 @@ if (startArg) {
         process.exit(0);
       }, 400);
       break;
+
+    case "save-played-songs":
+      setTimeout(async () => {
+        logger.log("Saving played songs...");
+
+        logger.log("Creating folder 'history'");
+        await fs.mkdir("history").catch(() => {});
+
+        let played = await queueCollection.find({ type: "played" }).toArray();
+
+        played = await Promise.all(
+          played.map(async (e) => {
+            let song = await getSong(e.songUri);
+            return { ...e, song };
+          })
+        );
+
+        const dateString = new Date().toISOString().split("T")[0];
+        logger.log("Saving to played-" + dateString + ".json");
+        await fs.writeFile(
+          "history/played-" + dateString + ".json",
+          JSON.stringify(played, null, 2)
+        );
+
+        const playedByDJ = played.filter((e) => e.addedBy);
+
+        logger.log("Saving to played-" + dateString + "-by-dj.json");
+        await fs.writeFile(
+          "history/played-" + dateString + "-by-dj.json",
+          JSON.stringify(playedByDJ, null, 2)
+        );
+
+        logger.log("Done");
+        // console.log(played);
+        process.exit(0);
+      }, 400);
+
+      break;
+
     case "--color":
       start();
       break;
