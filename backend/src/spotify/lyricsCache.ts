@@ -24,7 +24,7 @@ export async function getLyrics(uri: string): Promise<Lyrics> {
         { $set: { ...json, validUntil: Date.now() + 1000 * 60 * 60 * 24 * 7 } },
         { upsert: true }
       );
-      return json.lyrics;
+      return json;
     } catch (error) {
       return {
         error: true,
