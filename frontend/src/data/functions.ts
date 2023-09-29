@@ -30,7 +30,7 @@ export async function customFetch<T>(
   } = { method: "GET" }
 ): Promise<T> {
   try {
-    const baseURL = import.meta.env.PUBLIC_SERVER_URL;
+    const baseURL = import.meta.env.PUBLIC_SERVER_URL.replace(/["`']/g, "")
     console.log("Fetching", baseURL + route);
     const url = new URL(route, baseURL);
     const res = await fetch(url, {
