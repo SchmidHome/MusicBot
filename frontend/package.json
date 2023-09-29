@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite dev --open --host",
+    "start": "vite dev --open --host --port 80",
     "build": "vite build",
     "preview": "vite preview",
     "format": "prettier --plugin-search-dir . --write ."

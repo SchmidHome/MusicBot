@@ -4,10 +4,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const filePath = path.dirname(fileURLToPath(import.meta.url));
-const sassPath = `${
-  // remove drive letter
-  filePath.split(":", 2)[1].replace(/\\/g, "/")
-}/src/_variables.sass`;
+console.log(filePath);
+const sassPath = `${filePath.includes(":")
+    // remove drive letter
+    ? filePath.split(":", 2)[1].replace(/\\/g, "/")
+    : filePath
+  }/src/_variables.sass`;
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

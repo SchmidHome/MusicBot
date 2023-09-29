@@ -1,4 +1,3 @@
----
 type: docker
 kind: pipeline
 name: build
@@ -7,6 +6,9 @@ volumes:
 - name: dockersock
   host:
     path: /var/run/docker.sock
+- name: env
+  host:
+    path: /home/environment/musicbot.env
 
 steps:
 - name: build
@@ -15,30 +17,21 @@ steps:
   - name: dockersock
     path: /var/run/docker.sock
   commands:
-  - docker build . -t musicbot:build-${DRONE_BUILD_NUMBER}
+  - docker build ./frontend -t musicbot-frontend:latest
 
-- name: push
+- name: deploy
   image: docker
   volumes:
   - name: dockersock
     path: /var/run/docker.sock
+  - name: env
+    path: /tmp/env
   commands:
-  - docker image tag musicbot:build-${DRONE_BUILD_NUMBER} registry.kamaux.de/musicbot:${DRONE_BRANCH}
-  - docker push registry.kamaux.de/musicbot:${DRONE_BRANCH}
+  - docker stop musicbot-frontend || true
+  - docker rm musicbot-frontend || true
+  - docker run -d --name musicbot-frontend --env-file /tmp/env --network nginx --restart unless-stopped musicbot-frontend:latest
   when:
     event:
-    - push
-
-- name: cleanup
-  image: docker
-  volumes:
-  - name: dockersock
-    path: /var/run/docker.sock
-  commands:
-  - sleep 6
-  - docker image rm -f musicbot:build-${DRONE_BUILD_NUMBER}
-  # - docker image prune -f
-  when:
-    status:
-    - failure
-    - success
+    - promote
+    target:
+    - production

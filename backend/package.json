@@ -10,6 +10,7 @@
     "serve": "tsc && node out/index.js",
     "dev": "nodemon src/index.ts",
     "clear-cache": "ts-node src/index.ts clear-cache",
+    "clear-queue": "ts-node src/index.ts clear-queue",
     "save-played-songs": "ts-node src/index.ts save-played-songs",
     "check-db": "ts-node src/index.ts check-db",
     "pm2-start": "pm2 start out/index.js --name musicbot -- --color",

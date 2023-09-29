@@ -1,0 +1,11 @@
+.dockerignore
+.drone.yml
+
+.gitignore
+.git
+
+node_modules
+dist
+
+Dockerfile
+package-lock.json
