@@ -42,7 +42,7 @@ export default async function startHA() {
 let running = false;
 let lastColor: [number, number, number] | undefined = undefined;
 let lastUpdate: number = 0;
-let firstPause = true;
+// let firstPause = true;
 export async function updateColor() {
   if (running) return logger.warn("updateColor already running");
   running = true;
@@ -55,13 +55,13 @@ export async function updateColor() {
     }
     let now = await getPlaying();
     let isPaused = await usedPlayer.getPaused();
-    if (firstPause && isPaused) {
-      firstPause = false;
-      isPaused = false;
-      return (running = false);
-    } else if (!isPaused) {
-      firstPause = true;
-    }
+    // if (firstPause && isPaused) {
+    //   firstPause = false;
+    //   isPaused = false;
+    //   return (running = false);
+    // } else if (!isPaused) {
+    //   firstPause = true;
+    // }
     if (!now) return (running = false);
     let song = await getSong(now.songUri);
 
@@ -80,7 +80,8 @@ export async function updateColor() {
     let colorSaturated = roundColor(scaleColor(rangeColor(HSLtoRGB(hsl2))));
     if (isPaused) {
       color = [255, 200, 100];
-      colorSaturated = [255, 200, 100];
+      // color = [0, 0, 0];
+      colorSaturated = color;
     }
 
     if (sameColor(color, lastColor) && Date.now() - lastUpdate < 1000 * 60)
@@ -124,9 +125,9 @@ const entityArr = [
   {
     id: "light.06_kuess_rgb",
   },
-  // {
-  //   id: "light.07_andi_rgb",
-  // },
+  {
+    id: "light.07_andi_rgb",
+  },
   {
     id: "light.10_flur_balken_rgb",
   },

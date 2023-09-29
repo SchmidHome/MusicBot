@@ -37,12 +37,14 @@ validateCollection(userCollection, UserSchema);
       state: "admin",
     });
   }
-})()
+})();
 
 export function getIp(req: Request<any, any, any>): IP | undefined {
   let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   if (!ip) return undefined;
-  return ipSchema.parse(ip);
+  let ipParsed = ipSchema.parse(ip);
+  if (ipParsed.startsWith("::ffff:")) ipParsed = ipParsed.slice(7);
+  return ipParsed;
 }
 
 export async function checkUser(

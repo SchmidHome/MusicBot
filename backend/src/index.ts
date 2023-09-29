@@ -26,7 +26,7 @@ let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
 
-const QUEUE_LEN = 4;
+const QUEUE_LEN = 5;
 
 let running = false;
 async function checkPlaying(initial = false) {
@@ -200,6 +200,15 @@ if (startArg) {
         await clearSongCache();
         await clearPlaylistCache();
         await clearLyricsCache();
+        logger.log("Done");
+        process.exit(0);
+      }, 400);
+      break;
+    
+      case "clear-queue":
+      setTimeout(async () => {
+        logger.log("Clearing queue...");
+        await queueCollection.deleteMany({});
         logger.log("Done");
         process.exit(0);
       }, 400);
