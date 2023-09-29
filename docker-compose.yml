@@ -2,19 +2,24 @@
 services:
 
   frontend:
+    container_name: frontend
     build: ./frontend
     restart: always
     # ports:
-    # - 80:80
+  # - 80:80
 
   backend:
+    container_name: backend
     build: ./backend
     restart: always
     ports:
     - 3000:3000
     env_file: backend/.env
+    depends_on:
+    - mongo
 
   mongo:
+    container_name: mongo
     image: mongo
     restart: always
     ports:
@@ -26,6 +31,7 @@ services:
     - ./mongodb:/data/db
 
   mongo-ui:
+    container_name: mongo-ui
     image: mongo-express
     restart: always
     ports:
@@ -36,6 +42,7 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://root:pass@mongo:27017/
 
   lyrics-api:
+    container_name: lyrics-api
     image: spotify-lyrics-api
     build:
       context: .
