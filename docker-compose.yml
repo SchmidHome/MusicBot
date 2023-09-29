@@ -1,6 +1,10 @@
 
-services:
+networks:
+  default:
+    external:
+      name: nginx
 
+services:
   frontend:
     container_name: frontend
     build: ./frontend
