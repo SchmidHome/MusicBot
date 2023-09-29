@@ -3,6 +3,7 @@
 
   /** @type {import('./$types').PageData} */
   export let data;
+  let name = data.name || data.ip || ""
 </script>
 
 <div class="wrapper">
@@ -13,7 +14,7 @@
 
     <div class="nametag">
       <p>
-        {(data.name || data.ip).slice(0, 25)}{(data.name || data.ip).length > 25
+        {name.slice(0, 25)}{name.length > 25
           ? "..."
           : ""} ({data.state})
       </p>
