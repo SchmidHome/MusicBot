@@ -6,13 +6,13 @@ FROM node:alpine
 
 RUN apk add xdg-utils
 
+WORKDIR /usr/app
+
 COPY package.json yarn.lock ./
 
 RUN yarn install
 
 COPY . .
-
-WORKDIR /usr/app
 
 COPY --from=time /etc/timezone /etc/timezone
 COPY --from=time /etc/localtime /etc/localtime
