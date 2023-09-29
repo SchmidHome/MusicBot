@@ -31,6 +31,7 @@ export async function customFetch<T>(
 ): Promise<T> {
   try {
     const baseURL = import.meta.env.PUBLIC_SERVER_URL;
+    console.log("Fetching", baseURL + route);
     const url = new URL(route, baseURL);
     const res = await fetch(url, {
       method: method || "GET",
