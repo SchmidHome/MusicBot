@@ -30,8 +30,8 @@ steps:
   - docker stop musicbot-frontend || true
   - docker rm musicbot-frontend || true
   - docker run -d --name musicbot-frontend --env-file /tmp/env --network nginx --restart unless-stopped musicbot-frontend:latest
-  when:
-    event:
-    - promote
-    target:
-    - production
+  # when:
+  #   event:
+  #   - promote
+  #   target:
+  #   - production
