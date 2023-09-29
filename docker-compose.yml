@@ -4,8 +4,8 @@ services:
   frontend:
     build: ./frontend
     restart: always
-    ports:
-    - 80:80
+    # ports:
+    # - 80:80
 
   backend:
     build: ./backend
@@ -40,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: spotify-lyrics-api.Dockerfile
-      no_cache: true
+      # no_cache: true
     restart: always
     ports:
     - 8000:8000
