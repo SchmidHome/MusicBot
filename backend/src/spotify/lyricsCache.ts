@@ -16,7 +16,9 @@ export async function getLyrics(uri: string): Promise<Lyrics> {
   } else {
     try {
       const id = uri.slice(-22);
-      const lyrics_url = "http://127.0.0.1:8000/index.php?trackid=" + id;
+      const lyrics_url = "http://127.0.0.1:8000/public/index.php?trackid=" + id;
+      // const lyrics_url = "https://spotify-lyric-api-984e7b4face0.herokuapp.com/?trackid=" + id;
+
       const res = await fetch(lyrics_url);
       const json = await res.json();
       await lyricsCache.updateOne(

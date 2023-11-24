@@ -7,7 +7,7 @@ const logger = new ConsoleLogger("mongodb", chalk.magentaBright);
 
 export type Cached<T> = T & { validUntil: number };
 
-export const client = new MongoClient("mongodb://root:pass@mongo:27017/");
+export const client = new MongoClient("mongodb://root:pass@localhost:27017/");
 
 export const db = client.db("musicbot");
 

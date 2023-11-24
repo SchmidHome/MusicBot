@@ -32,7 +32,6 @@ export async function customFetch<T>(
   try {
     const baseURL = import.meta.env.PUBLIC_SERVER_URL.replace(/["`']/g, "")
     const url = new URL(route, baseURL);
-    console.log("Fetching", url);
     const res = await fetch(url, {
       method: method || "GET",
       headers: {
