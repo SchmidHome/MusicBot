@@ -71,13 +71,27 @@ export async function updateColor() {
       running = false;
       return;
     }
+
+    if (!isPaused) {
+      const range = 60;
+      // change RGB values randomly by +-range
+      color = color
+        .map((c) => c + Math.random() * range * 2 - range)
+        .map((v) => Math.min(Math.max(Math.round(v), 0), 255)) as [
+        number,
+        number,
+        number
+      ];
+    }
+
     // make colors more vib
     let hsl = RGBtoHSL(color);
     let hsl2 = { ...hsl };
     // maximize saturation
-    hsl2.sat = Math.min(hsl.sat + 15, 100);
+    hsl2.sat = Math.min(hsl.sat + 25, 100);
     hsl2.lum = 50;
     let colorSaturated = roundColor(scaleColor(rangeColor(HSLtoRGB(hsl2))));
+
     if (isPaused) {
       color = [255, 200, 100];
       // color = [0, 0, 0];
@@ -104,7 +118,7 @@ export async function updateColor() {
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
           rgbw_color: [c[0], c[1], c[2], 0],
-          transition: 5,
+          transition: 3,
         });
       })
     );
@@ -113,31 +127,31 @@ export async function updateColor() {
   running = false;
 }
 
-setInterval(() => updateColor().finally(() => (running = false)), 1000 * 20);
+setInterval(() => updateColor().finally(() => (running = false)), 1000 * 10);
 
 const entityArr = [
-  {
-    id: "light.01_garderobe_rand_rgb",
-  },
-  {
-    id: "light.06_esswo_rgb",
-  },
-  {
-    id: "light.06_kuess_rgb",
-  },
-  {
-    id: "light.07_andi_rgb",
-  },
-  {
-    id: "light.10_flur_balken_rgb",
-  },
+  // {
+  //   id: "light.01_garderobe_rand_rgb",
+  // },
+  // {
+  //   id: "light.06_esswo_rgb",
+  // },
+  // {
+  //   id: "light.06_kuess_rgb",
+  // },
+  // {
+  //   id: "light.07_andi_rgb",
+  // },
+  // {
+  //   id: "light.10_flur_balken_rgb",
+  // },
   {
     id: "light.13_johannes_licht",
   },
-  {
-    id: "light.11_gabriele_rgb",
-  },
-  {
-    id: "light.15_hwr_rgb",
-  },
+  // {
+  //   id: "light.11_gabriele_rgb",
+  // },
+  // {
+  //   id: "light.15_hwr_rgb",
+  // },
 ];
