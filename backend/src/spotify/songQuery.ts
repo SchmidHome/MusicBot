@@ -19,7 +19,7 @@ export async function querySong(
   searchText: string,
   searchLength: number = 5
 ): Promise<Song[]> {
-  const result = await searchCache.findOne({ str: searchText });
+  let result = await searchCache.findOne({ str: searchText });
   if (
     result &&
     result.validUntil > Date.now() &&
@@ -29,7 +29,10 @@ export async function querySong(
   } else if (result && result.validUntil > Date.now() && result.end) {
     return [];
   } else {
-    if (result) await searchCache.deleteMany({ str: searchText });
+    if (result) {
+      await searchCache.deleteMany({ str: searchText });
+      if (result.validUntil < Date.now()) result = null;
+    }
 
     const lengthStart = result?.results.length || 0;
     const songsAdded = await queryRequest(
@@ -54,9 +57,9 @@ async function queryRequest(
   limit: number
 ): Promise<Song[]> {
   await awaitRequest();
+  loggerSpotify.log("query songs", song, offset, limit);
   const tracks =
     (await spotify.searchTracks(song, { limit, offset })).body.tracks?.items ||
     [];
-  loggerSpotify.log("query songs", song, offset, limit);
   return Promise.all(tracks.map(trackToSong));
 }
