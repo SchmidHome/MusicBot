@@ -2,6 +2,7 @@
   import lyrics from "$data/lyrics";
   import currentSong from "$data/currentSong";
   import type { SyncedLyrics, UnsyncedLyrics } from "../../types.d";
+  import globalDelay from "$data/delay";
 
   let currentLineEle: HTMLElement | null = null;
 
@@ -10,7 +11,7 @@
     let currentLyrics = $lyrics as SyncedLyrics | UnsyncedLyrics;
     if (currentLyrics.syncType === "LINE_SYNCED") {
       let index = currentLyrics.lines.findIndex(
-        (line) => line.startTimeMs >= ($currentSong?.songPos ?? 0)
+        (line) => line.startTimeMs + $globalDelay >= ($currentSong?.songPos ?? 0)
       );
       if (index === 0) return -1;
       if (index === -1) return currentLyrics.lines.length;

@@ -9,5 +9,6 @@ export default defineConfig({
     watch: {
       ignored: ["**"],
     },
+    port: 80
   },
 });

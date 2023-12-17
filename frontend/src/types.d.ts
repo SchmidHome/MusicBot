@@ -13,7 +13,7 @@ type QueueElement = SongElement & {
   type: "new" | "queued" | "next" | "now" | "played" | "removed";
   playStartTime?: Date | undefined;
   pos?: number | undefined;
-  addedBy?: string | null | undefined;
+  addedBy?: string | undefined;
 };
 
 type PlayingElement = QueueElement & {

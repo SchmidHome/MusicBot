@@ -17,3 +17,13 @@ export async function removeFromQueue(song: QueueElement): Promise<void> {
     method: "DELETE",
   });
 }
+
+export async function moveToTop(song: Pick<QueueElement, "_id">): Promise<void> {
+  await customFetch<void>("queueMove", {
+    body: {
+      _id: song._id,
+      direction: -100
+    },
+    method: "POST",
+  });
+}

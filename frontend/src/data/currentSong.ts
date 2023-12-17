@@ -7,7 +7,7 @@ import { browser } from "$app/environment";
 export const PLACEHOLDER_SONG: PlayingElement & { songPos: number } = {
   _id: "64ca1eafad57bdecbd86063c",
   songUri: "spotify:track:4odiyU3myG29Ld0wurMfE8",
-  addedBy: null,
+  addedBy: undefined,
   type: "now",
   pos: 0,
   playStartTime: new Date("2023-08-02T09:15:27.038Z"),

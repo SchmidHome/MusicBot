@@ -9,6 +9,7 @@ import { checkUser, getIp } from "../user";
 import { searchRouter } from "./search";
 import { lyricsRouter } from "./lyrics";
 import chalk from "chalk";
+import { delayRouter } from "./delay";
 
 export const loggerAPI = new ConsoleLogger("api", chalk.red);
 
@@ -37,6 +38,7 @@ app.use(volumeRouter);
 app.use(queueRouter);
 app.use(searchRouter);
 app.use(lyricsRouter);
+app.use(delayRouter);
 
 export function startAPI() {
   app.listen(3000, () => loggerAPI.log("Started and listening on port 3000."));

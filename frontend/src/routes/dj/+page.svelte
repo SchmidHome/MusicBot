@@ -4,6 +4,10 @@
   import MainSong from "$lib/components/MainSong.svelte";
   import Queue from "$assets/queue.svelte";
   import Microphone from "$assets/microphone.svelte";
+  import Delay from "$assets/delay.svelte";
+
+  /** @type {import('./$types').PageData} */
+  export let data: any;
 </script>
 
 <div style:width="100%">
@@ -19,6 +23,11 @@
   <button class="queue-btn" on:click={() => goto("dj/queue")}>
     <Queue height="1.5em" width="1.5em" />
   </button>
+  {#if data.state === "admin"}
+    <button class="delay-btn" on:click={() => goto("dj/delay")}>
+      <Delay height="1.5em" width="1.5em" />
+    </button>
+  {/if}
 </div>
 
 <style lang="sass">
@@ -30,7 +39,7 @@
     margin-top: $spacing * 2
     width: 100%
 
-  .search-btn, .queue-btn, .lyrics-btn
+  .search-btn, .queue-btn, .lyrics-btn, .delay-btn
     border-radius: $border-radius
     border: none
     background-color: $bg-light
@@ -42,6 +51,7 @@
     color: $text-low
     cursor: pointer
     transition: all 0.2s ease-in-out
+    box-shadow: $shadow
 
     &:hover
       background-color: $bg-light

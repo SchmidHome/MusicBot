@@ -1,5 +1,8 @@
 <script lang="ts">
   import type { QueueElement, SongElement as SongType } from "../../types.d";
+  import { createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
 
   export let song: SongType | QueueElement;
 
@@ -11,7 +14,9 @@
       : "Jetzt";
 </script>
 
-<div class="wrapper">
+<div class="wrapper" on:click={() => {
+  dispatch("select");
+}} on:keydown={() => {}} tabindex={-1} role="button">
   <div class="text-wrapper">
     <div class="cover" style:background-image={"url(" + song?.imageUri + ")"} />
     <div class="info-outer">

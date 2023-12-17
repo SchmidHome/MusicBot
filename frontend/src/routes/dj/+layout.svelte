@@ -1,22 +1,22 @@
 <script>
+  import { browser } from "$app/environment";
+  import { goto } from "$app/navigation";
   import Back from "$assets/back.svelte";
 
   /** @type {import('./$types').PageData} */
   export let data;
-  let name = data.name || data.ip || ""
+  let name = browser ? data.name || data.ip || "" : "";
 </script>
 
 <div class="wrapper">
   <div class="buttons">
-    <button class="back-btn" on:click={() => window.history.back()}>
+    <button class="back-btn" on:click={() => goto("/dj")}>
       <Back height="1.25em" width="1.25em" />
     </button>
 
     <div class="nametag">
       <p>
-        {name.slice(0, 25)}{name.length > 25
-          ? "..."
-          : ""} ({data.state})
+        {name.slice(0, 28)}{name.length > 25 ? "..." : ""} ({data.state})
       </p>
     </div>
   </div>
@@ -28,7 +28,8 @@
 
 <style lang="sass">
   .wrapper
-    height: 100vh
+    height: 100%
+    min-height: 90vh
     display: flex
     flex-direction: column
     align-items: center
@@ -38,6 +39,8 @@
     flex-direction: row
     justify-content: space-between
     width: 100%
+    position: relative
+    z-index: 100
 
   .back-btn
     outline: none

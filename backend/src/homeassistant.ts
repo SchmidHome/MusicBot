@@ -106,15 +106,18 @@ export async function updateColor() {
     lastColor = color;
     lastUpdate = Date.now();
     logger.log(`updating color to R${color[0]} G${color[1]} B${color[2]}`);
+    // logger.debug(`updating ${entityArr.length} entities`);
 
     await Promise.all(
       entityArr.map(async (entity) => {
         if (!ha) return logger.warn("no connection to homeassistant");
+        // logger.debug(`updating ${entity.id}`);
         // set random timeout
         await new Promise((resolve) =>
-          setTimeout(resolve, Math.random() * 1000)
+        setTimeout(resolve, Math.random() * 1000)
         );
         const c = colorSaturated;
+        logger.debug(`updating ${entity.id} to R${c[0]} G${c[1]} B${c[2]}`);
         await ha.callService("light", "turn_on", {
           entity_id: entity.id,
           rgbw_color: [c[0], c[1], c[2], 0],
@@ -122,29 +125,31 @@ export async function updateColor() {
         });
       })
     );
-  } catch (error) {}
+  } catch (error) {
+    logger.warn("error while updating color");
+  }
   logger.log(`update(): ${Date.now() - start}ms`);
   running = false;
 }
 
-setInterval(() => updateColor().finally(() => (running = false)), 1000 * 10);
+setInterval(() => updateColor().finally(() => (running = false)), 1000 * 20);
 
 const entityArr = [
-  // {
-  //   id: "light.01_garderobe_rand_rgb",
-  // },
-  // {
-  //   id: "light.06_esswo_rgb",
-  // },
-  // {
-  //   id: "light.06_kuess_rgb",
-  // },
+  {
+    id: "light.01_garderobe_rand_rgb",
+  },
+  {
+    id: "light.06_esswo_rgb",
+  },
+  {
+    id: "light.06_kuess_rgb",
+  },
   // {
   //   id: "light.07_andi_rgb",
   // },
-  // {
-  //   id: "light.10_flur_balken_rgb",
-  // },
+  {
+    id: "light.10_flur_balken_rgb",
+  },
   {
     id: "light.13_johannes_licht",
   },

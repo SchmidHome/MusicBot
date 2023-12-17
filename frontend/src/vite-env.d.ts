@@ -6,5 +6,6 @@ interface ImportMetaEnv {
   readonly PUBLIC_VOLUME_FETCH_INTERVAL?: number;
   readonly PUBLIC_QUEUE_FETCH_INTERVAL?: number;
   readonly PUBLIC_CURRENT_SONG_FETCH_INTERVAL?: number;
+  readonly PUBLIC_GLOBAL_DELAY_FETCH_INTERVAL?: number;
   readonly PUBLIC_LYRICS_FETCH_INTERVAL?: number;
 }

@@ -2,43 +2,50 @@
   import ProgressBar from "./ProgressBar.svelte";
   import { getTimeStringFromMS } from "$data/functions";
   import currentSong from "$data/currentSong";
+  import type { PlayingElement, QueueElement, SongElement } from "../../types";
 
+  export let omitShadow = false;
   export let ignoreOrientation = false;
+  export let song: (PlayingElement & {songPos: number}) | (SongElement | QueueElement) & {songPos?: number, addedBy?: string} | null = null;
 
-  $: durationString = $currentSong
-    ? getTimeStringFromMS($currentSong.duration_ms)
+  $: songElement = (song ?? $currentSong) as (PlayingElement & {songPos: number}) | (SongElement | QueueElement) & {songPos?: number, addedBy?: string};
+
+  $: durationString = songElement
+    ? getTimeStringFromMS(songElement.duration_ms)
     : "";
 
-  $: positionInTrackString = $currentSong
-    ? getTimeStringFromMS($currentSong.songPos)
+  $: positionInTrackString = songElement && "songPos" in songElement
+    ? getTimeStringFromMS(songElement.songPos)
     : "";
 
   $: songPercentage =
-    (($currentSong?.songPos ?? 0) / ($currentSong?.duration_ms ?? 1)) * 100;
+    ((songElement?.songPos ?? 0) / (songElement?.duration_ms ?? 1)) * 100;
 </script>
 
-<div class="wrapper" class:ignoreOrientation>
+<div class="wrapper" class:ignoreOrientation class:omitShadow>
   <div
     class="cover"
-    style:background-image={"url(" + $currentSong?.imageUri + ")"} />
+    style:background-image={"url(" + songElement?.imageUri + ")"} />
 
   <div class="lower-wrapper">
     <div class="title-wrapper">
-      <h1 class="title">{$currentSong?.name}</h1>
+      <h1 class="title" class:cursive={songElement?.name === undefined}>{songElement?.name ?? "No Song"}</h1>
     </div>
     <div class="subtitle">
-      <span class="artist">{$currentSong?.artist}</span>
-      {#if $currentSong?.addedBy}
-        <span class="added-by">Hinzugefügt von {$currentSong.addedBy}</span>
+      <span class="artist">{songElement?.artist}</span>
+      {#if songElement?.addedBy}
+        <span class="added-by">Hinzugefügt von {songElement.addedBy}</span>
       {/if}
     </div>
 
-    <ProgressBar
-      percentage={songPercentage}
-      startLabel={positionInTrackString}
-      endLabel={durationString}
-      --height=".5em"
-      --fill="var(--text-low)" />
+    {#if songElement?.songPos}
+      <ProgressBar
+        percentage={songPercentage}
+        startLabel={positionInTrackString}
+        endLabel={durationString}
+        --height=".5em"
+        --fill="var(--text-low)" />
+    {/if}
   </div>
 </div>
 
@@ -51,8 +58,9 @@
     border-radius: $border-radius
     background-color: $bg-light
     box-sizing: border-box
-    box-shadow: $shadow
     flex-direction: column
+    &:not(.omitShadow)
+      box-shadow: $shadow
   
   .lower-wrapper
     display: flex
@@ -82,6 +90,8 @@
     position: absolute
     inset: 0
     width: 100%
+    &.cursive
+      font-style: italic
   
   .subtitle
     display: flex
