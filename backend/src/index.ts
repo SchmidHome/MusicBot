@@ -19,14 +19,13 @@ import { clearPlaylistCache } from "./spotify/playlistCache";
 import { clearLyricsCache } from "./spotify/lyricsCache";
 import { queueCollection } from "./queue/queue";
 import fs from "fs/promises";
+import { QUEUE_LEN } from "./lib/config";
 
 const logger = new ConsoleLogger("index", chalk.white);
 
 let nextCounter = 0;
 
 let updateOnChange: NodeJS.Timeout | undefined;
-
-const QUEUE_LEN = 5;
 
 let running = false;
 async function checkPlaying(initial = false) {
@@ -103,7 +102,7 @@ async function checkPlaying(initial = false) {
     } else {
       // add more songs to queue
       let queue = (await getFullQueue()).filter((e) => e.type != "now");
-      logger.debug(`queue length: ${queue.length}`);
+      logger.debug(`queue length: ${queue.length}/${QUEUE_LEN}`);
       while (queue.length < QUEUE_LEN) {
         const newSong = await getSongFromBackgroundPlaylist();
         if (!newSong) {

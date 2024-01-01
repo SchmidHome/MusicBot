@@ -26,6 +26,8 @@ export const HOMEASSISTANT_HOST = CONFIG("HOMEASSISTANT_HOST");
 export const HOMEASSISTANT_PORT = parseInt(CONFIG("HOMEASSISTANT_PORT"));
 export const HOMEASSISTANT_TOKEN = CONFIG("HOMEASSISTANT_TOKEN");
 
+export const QUEUE_LEN = parseInt(CONFIG("QUEUE_LEN"));
+
 export const BLACKLIST = (process.env.BLACKLIST || "")
   .split(",")
   .map((e) => e.trim())
