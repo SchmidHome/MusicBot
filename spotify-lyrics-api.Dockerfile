@@ -4,6 +4,7 @@ FROM alpine/git as clone
 WORKDIR /spotify-lyrics-api
 
 RUN git clone https://github.com/akashrchandran/spotify-lyrics-api.git /spotify-lyrics-api
+RUN git checkout v2.1.1
 
 # PHP
 FROM php:8.1
