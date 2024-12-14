@@ -10,7 +10,10 @@
 
 <div class="wrapper">
   <div class="buttons">
-    <button class="back-btn" on:click={() => goto("/dj")}>
+    <button class="back-btn" on:click={() => {
+      if (window.location.pathname === "/dj") goto("/")
+      else goto("/dj")
+    }}>
       <Back height="1.25em" width="1.25em" />
     </button>
 

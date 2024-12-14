@@ -4,13 +4,12 @@
   import MainSong from "$lib/components/MainSong.svelte";
   import Queue from "$assets/queue.svelte";
   import Microphone from "$assets/microphone.svelte";
-  import Delay from "$assets/delay.svelte";
 
   /** @type {import('./$types').PageData} */
   export let data: any;
 </script>
 
-<div style:width="100%">
+<div class="wrapper">
   <MainSong ignoreOrientation={true} />
 </div>
 <div class="buttons">
@@ -34,6 +33,11 @@
 </div>
 
 <style lang="sass">
+  .wrapper
+    width: 100%
+    @media (orientation: landscape)
+      max-width: 120vh
+
   .buttons
     display: flex
     flex-direction: row

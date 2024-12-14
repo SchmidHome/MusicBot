@@ -76,6 +76,9 @@
     background-size: cover
     box-shadow: $shadow
     width: 100%
+    max-height: 70vh
+    max-width: 70vh
+    margin: auto
 
   .title-wrapper
     margin: 0
