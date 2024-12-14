@@ -109,7 +109,7 @@
     text-overflow: ellipsis
     white-space: nowrap
     @media screen and (orientation: landscape)
-      flex: 1 1 0
+      flex: 1 1 auto
   
   .artist:not(:last-child)
     margin-right: $spacing
