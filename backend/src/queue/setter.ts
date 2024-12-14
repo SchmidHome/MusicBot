@@ -23,12 +23,13 @@ export function setType(id: ObjectId, type: PositionType) {
 }
 
 const addMutex = new Mutex();
-export async function addSong(songUri: SongUri, addedBy?: string) {
+export async function addSong(songUri: SongUri, songName: string, addedBy?: string) {
   return addMutex.runExclusive(async () => {
     const _id = (
       await queueCollection.insertOne({
         songUri,
         addedBy: addedBy ? addedBy : undefined,
+        name: songName,
         type: "new",
       })
     ).insertedId;
@@ -37,6 +38,7 @@ export async function addSong(songUri: SongUri, addedBy?: string) {
     return {
       songUri,
       addedBy,
+      name: songName,
       type: "new" as PositionType,
       _id,
     };

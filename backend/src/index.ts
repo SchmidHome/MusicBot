@@ -63,7 +63,7 @@ async function checkPlaying(initial = false) {
           queuePlayingSong = queueElement;
         } else {
           logger.warn("new Song is playing, not in queue");
-          queuePlayingSong = await addSong(now.songUri);
+          queuePlayingSong = await addSong(now.songUri, now.name);
         }
       }
     }
@@ -95,7 +95,7 @@ async function checkPlaying(initial = false) {
           running = false;
           return;
         }
-        queueNextSong = await addSong(newSong.songUri);
+        queueNextSong = await addSong(newSong.songUri, newSong.name);
         logger.log("add next from default playlist");
       }
       await setType(queueNextSong._id, "next");
@@ -109,7 +109,7 @@ async function checkPlaying(initial = false) {
           running = false;
           return;
         }
-        await addSong(newSong.songUri);
+        await addSong(newSong.songUri, newSong.name);
         logger.log("added song from default playlist");
         queue = (await getFullQueue()).filter((e) => e.type != "now");
       }
@@ -149,7 +149,7 @@ async function checkPlaying(initial = false) {
           running = false;
           return;
         }
-        queuePlayingSong = await addSong(newSong.songUri);
+        queuePlayingSong = await addSong(newSong.songUri, newSong.name);
         logger.log("added from default playlist");
       }
       await setType(queuePlayingSong._id, "now");

@@ -1,7 +1,7 @@
 import { Song, SongUri } from "../spotify/song";
 
 export type PlayingState = {
-  now?: { songUri: SongUri; startDate: Date };
+  now?: { songUri: SongUri; startDate: Date, name: string };
   next?: { songUri: SongUri };
 };
 

@@ -20,7 +20,7 @@ export class SonosPlayer extends Player {
     );
     return {
       now: playing
-        ? { songUri: playing.now.spotifyUri, startDate: playing.now.startDate }
+        ? { songUri: playing.now.spotifyUri, startDate: playing.now.startDate, name: playing.now.name }
         : undefined,
       next: playing?.next ? { songUri: playing.next.spotifyUri } : undefined,
     };

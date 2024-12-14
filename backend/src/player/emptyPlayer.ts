@@ -31,6 +31,7 @@ export class EmptyPlayer extends Player {
         ? {
             songUri: this.playing.songUri,
             startDate: this.startDate || new Date(),
+            name: this.playing.name
           }
         : undefined,
       next: this.next ? { songUri: this.next.songUri } : undefined,

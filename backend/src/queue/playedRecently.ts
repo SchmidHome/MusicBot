@@ -17,7 +17,7 @@ export async function playedRecently(song: Song) {
 
   // check last played
   let elements = await queueCollection
-    .find({ songUri: song.songUri })
+    .find({$or: [{ songUri: song.songUri }, { name: song.name }]})
     .toArray();
   if (elements.length === 0) {
     return false;

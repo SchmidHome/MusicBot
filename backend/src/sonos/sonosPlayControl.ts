@@ -20,6 +20,7 @@ async function getPositionInfo(d: SonosDevice) {
     track: info.Track - 1,
     secondsInTrack: timeStringToSeconds(info.RelTime),
     duration_s: timeStringToSeconds(info.TrackDuration),
+    name: typeof info.TrackMetaData === "string" ? "" : info.TrackMetaData.Title ?? ""
   };
 }
 
@@ -70,6 +71,7 @@ const getPlayingMutex = new mutexRequest(
       const now = {
         spotifyUri: info.uri,
         startDate: new Date(s_now - info.secondsInTrack * 1000 + offset),
+        name: info.name,
         duration_s: info.duration_s,
       };
       let next = undefined;

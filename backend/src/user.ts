@@ -42,6 +42,7 @@ validateCollection(userCollection, UserSchema);
 export function getIp(req: Request<any, any, any>): IP | undefined {
   let ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
   if (!ip) return undefined;
+  if (ip.includes(",")) ip = ip.toString().split(",")[0];
   let ipParsed = ipSchema.parse(ip);
   if (ipParsed.startsWith("::ffff:")) ipParsed = ipParsed.slice(7);
   return ipParsed;

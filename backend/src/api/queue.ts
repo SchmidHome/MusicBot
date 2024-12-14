@@ -58,7 +58,7 @@ queueRouter.post("/queue", async (req, res) => {
     return res.status(400).send("Song played recently.");
   }
 
-  addSong(song.songUri, user.name);
+  addSong(song.songUri, song.name, user.name);
   res.status(200).send("Added song to queue.");
 });
 
