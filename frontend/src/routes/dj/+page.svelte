@@ -14,18 +14,21 @@
   <MainSong ignoreOrientation={true} />
 </div>
 <div class="buttons">
-  <button class="search-btn" on:click={() => goto("dj/search")}>
-    <Search height="1.5em" width="1.5em" />
-  </button>
-  <button class="lyrics-btn" on:click={() => goto("dj/lyrics")}>
-    <Microphone height="1.5em" width="1.5em" />
-  </button>
   <button class="queue-btn" on:click={() => goto("dj/queue")}>
     <Queue height="1.5em" width="1.5em" />
   </button>
+  {#if data.state !== "guest"}
+    <button class="search-btn" on:click={() => goto("dj/search")}>
+      <Search height="1.5em" width="1.5em" />
+    </button>
+  {/if}
   {#if data.state === "admin"}
     <button class="delay-btn" on:click={() => goto("dj/delay")}>
-      <Delay height="1.5em" width="1.5em" />
+      <Microphone height="1.5em" width="1.5em" />
+    </button>
+  {:else}
+    <button class="lyrics-btn" on:click={() => goto("dj/lyrics")}>
+      <Microphone height="1.5em" width="1.5em" />
     </button>
   {/if}
 </div>

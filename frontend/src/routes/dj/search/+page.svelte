@@ -38,7 +38,7 @@
 
 <div class="wrapper">
   <div class="search-wrapper">
-    <input bind:value={search} placeholder="Search for a song" />
+    <input bind:value={search} placeholder="Search for a song" autofocus />
   </div>
 
   {#if $debouncedSearch}
@@ -48,7 +48,12 @@
       <div class="songs-wrapper">
         {#each songs as song}
           <div class="song-wrapper">
-            <Song {song} hideTime on:select={() => openSong = song} />
+            <Song {song} hideTime on:select={() => {
+              song = {...song};
+              // prevent progress bar to display in modal
+              delete song.songPos;
+              openSong = song;
+            }} />
           </div>
         {/each}
       </div>
@@ -56,19 +61,18 @@
         {#if openSong}
           <div class="innerModal" on:click|stopPropagation on:keydown|stopPropagation role="button" tabindex="-1">
             <MainSong song={openSong} ignoreOrientation omitShadow />
-            <div class="divider" />
-            {#if loading}
-              <p class="loading">Hetzt mich nicht</p>
-            {:else}
-              <div class="button-wrapper">
+            <div class="button-wrapper">
+              {#if loading}
+                <p class="loading">Hetzt mich nicht</p>
+              {:else}
                 <button class="btn" on:click={add}>Hinzufügen</button>
-              </div>
-            {/if}
+              {/if}
+            </div>
           </div>
         {/if}
       </div>
     {:catch error}
-      <p>{error.message}</p>
+      <p class="error">Die Songs konnten nicht angefragt werden ({error.message})</p>
     {/await}
   {/if}
 </div>
@@ -86,8 +90,8 @@
   .search-wrapper
     width: 100%
   .search-wrapper input
-    border: 1px solid transparent
     outline: none
+    border: none
     font-size: 1.5em
     background: $bg-light
     border-radius: $border-radius
@@ -96,7 +100,6 @@
     box-sizing: border-box
     &:focus
       box-shadow: $shadow
-      border-color: $bg-dark
 
   .songs-wrapper
     display: flex
@@ -108,13 +111,7 @@
 
   .song-wrapper
     height: 15vh
-
-  .divider
-    height: .5rem
-    width: calc(100% - 4 * $spacing)
-    background: $bg-dark
-    margin: $spacing * 2
-    box-sizing: border-box
+    cursor: pointer
 
   .button-wrapper
     display: flex
@@ -122,12 +119,17 @@
     gap: $spacing
     width: 100%
     align-items: stretch
-    padding: $spacing $spacing * 2 $spacing * 2
+    padding: 0 $spacing $spacing * 2
     box-sizing: border-box
+    position: sticky
+    bottom: 0
     .btn
       font-size: 1.5em
       font-weight: bold
-      border: 1px solid $bg-dark
+      background: $bg-dark
+      transition: box-shadow 0.3s ease-in-out
+      &:hover
+        box-shadow: $shadow
 
   .modal
     position: fixed
@@ -149,6 +151,8 @@
       width: 90vw
       border-radius: $border-radius
       box-shadow: $shadow
+      max-height: 100vh
+      overflow-y: auto
   
   .loading
     text-align: center
@@ -171,4 +175,8 @@
       content: ".."
     100%
       content: "..."
+
+  .error
+    padding-top: $spacing
+    font-size: 1.5em
 </style>

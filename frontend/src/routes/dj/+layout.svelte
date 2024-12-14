@@ -43,6 +43,7 @@
     z-index: 100
 
   .back-btn
+    cursor: pointer
     outline: none
     border: none
     background: $bg-light

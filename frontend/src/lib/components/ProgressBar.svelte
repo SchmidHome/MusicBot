@@ -2,7 +2,6 @@
   export let percentage: number = 0;
   export let startLabel: string | undefined = undefined;
   export let endLabel: string | undefined = undefined;
-
 </script>
 
 <div class="wrapper">
