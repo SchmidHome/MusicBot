@@ -53,5 +53,6 @@
     inset: 0
     filter: blur(8px) brightness(0.5)
     background-size: cover
+    background-position: center
     z-index: -1
 </style>

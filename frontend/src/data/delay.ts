@@ -13,7 +13,7 @@ export async function refreshDelay(): Promise<number> {
       delay: number
       }>("delay", {method: "GET"});
 
-  if (delay !== undefined) {
+  if (delay !== undefined && delay !== null) {
     globalDelay.set(delay.delay);
   }
   return get(globalDelay);

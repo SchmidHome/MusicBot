@@ -9,6 +9,7 @@ const logger = new ConsoleLogger("user");
 export const UserStateSchema = z.enum([
   "dj", // can only add songs
   "admin", // can add, remove and reorder songs
+  "guest", // can't add songs, can only view
 ]);
 
 export type UserState = z.infer<typeof UserStateSchema>;
